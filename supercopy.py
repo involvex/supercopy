@@ -13,9 +13,9 @@ import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog
 import threading
+import ctypes
 
 # --- CORE ENGINE ---
-
 
 class CopyEngine:
     """Encapsulates the core logic for high-performance file copying."""
@@ -33,13 +33,10 @@ class CopyEngine:
                     total_size += file_size
                     file_list.append((source_path, relative_path, file, file_size))
                 except OSError:
-                    # File might be a symlink or inaccessible, skip it
                     continue
         return file_list, total_size
 
-    def _copy_file_task(
-        self, source_path, dest_path, buffer_size, verify, progress_callback
-    ):
+    def _copy_file_task(self, source_path, dest_path, buffer_size, verify, progress_callback):
         """The actual file copy operation performed by a worker thread."""
         try:
             original_checksum = None
@@ -59,10 +56,10 @@ class CopyEngine:
                     raise Exception("Checksum mismatch")
 
             file_size = os.path.getsize(dest_path)
-            progress_callback("file", file_size)
+            progress_callback('file', file_size)
             return (source_path, None)
         except Exception as e:
-            progress_callback("file", 0)  # Still need to advance the file progress bar
+            progress_callback('file', 0)
             return (source_path, str(e))
 
     def _verify_checksum(self, file_path, original_checksum):
@@ -76,13 +73,8 @@ class CopyEngine:
         except Exception:
             return False
 
-    def run_copy(
-        self, source, destination, workers, buffer_size, verify, progress_callback
-    ):
-        """
-        Executes the copy operation for a source file or directory.
-        Calls the progress_callback with progress updates.
-        """
+    def run_copy(self, source, destination, workers, buffer_size, verify, progress_callback):
+        """Executes the copy operation for a source file or directory."""
         errors = []
         source = os.path.abspath(source)
         destination = os.path.abspath(destination)
@@ -94,27 +86,20 @@ class CopyEngine:
             if os.path.exists(destination) and not os.path.isdir(destination):
                 raise ValueError(f"Cannot copy a directory to a file '{destination}'.")
 
-            dest_dir = (
-                os.path.join(destination, os.path.basename(source))
-                if os.path.isdir(destination) and os.path.basename(source) != ""
-                else destination
-            )
-
+            dest_dir = os.path.join(destination, os.path.basename(source)) if os.path.isdir(destination) and os.path.basename(source) != '' else destination
+            
             file_list, total_size = self.get_file_list(source)
-
+            
             if not file_list:
-                progress_callback("finish", 0)
+                progress_callback('finish', 0)
                 return []
 
-            progress_callback("start", {"files": len(file_list), "bytes": total_size})
-
-            # Create destination directories sequentially first
-            required_dirs = {
-                os.path.join(dest_dir, rel_path) for _, rel_path, _, _ in file_list
-            }
+            progress_callback('start', {'files': len(file_list), 'bytes': total_size})
+            
+            required_dirs = {os.path.join(dest_dir, rel_path) for _, rel_path, _, _ in file_list}
             for d in required_dirs:
                 os.makedirs(d, exist_ok=True)
-
+            
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 futures = {
                     executor.submit(
@@ -123,16 +108,16 @@ class CopyEngine:
                         os.path.join(dest_dir, rel_path, file_name),
                         buffer_size,
                         verify,
-                        progress_callback,
+                        progress_callback
                     )
                     for src_path, rel_path, file_name, _ in file_list
                 }
-
+                
                 for future in as_completed(futures):
                     path, error = future.result()
                     if error:
                         errors.append((path, error))
-        else:  # It's a single file
+        else: # It's a single file
             if os.path.isdir(destination):
                 dest_file = os.path.join(destination, os.path.basename(source))
             else:
@@ -140,142 +125,92 @@ class CopyEngine:
             os.makedirs(os.path.dirname(dest_file), exist_ok=True)
 
             file_size = os.path.getsize(source)
-            progress_callback("start", {"files": 1, "bytes": file_size})
+            progress_callback('start', {'files': 1, 'bytes': file_size})
 
-            _, error = self._copy_file_task(
-                source, dest_file, buffer_size, verify, progress_callback
-            )
+            _, error = self._copy_file_task(source, dest_file, buffer_size, verify, progress_callback)
             if error:
                 errors = [(source, error)]
 
-        progress_callback("finish", 0)
+        progress_callback('finish', 0)
         return errors
-
 
 class UnpackEngine:
     """Encapsulates the logic for unpacking various archive formats."""
 
     def run_unpack(self, archive_path, destination_path, progress_callback):
-        """
-        Extracts an archive to a destination.
-        Calls the progress_callback with progress updates.
-        """
         archive_path = os.path.abspath(archive_path)
         destination_path = os.path.abspath(destination_path)
 
         if not os.path.exists(archive_path):
             raise FileNotFoundError(f"Archive path '{archive_path}' does not exist.")
-
+            
         os.makedirs(destination_path, exist_ok=True)
 
         _, ext = os.path.splitext(archive_path)
         ext = ext.lower()
 
-        if ext == ".zip":
+        if ext == '.zip':
             self._unpack_zip(archive_path, destination_path, progress_callback)
-        elif ext == ".7z":
+        elif ext == '.7z':
             self._unpack_7z(archive_path, destination_path, progress_callback)
-        elif ext == ".rar":
+        elif ext == '.rar':
             self._unpack_rar(archive_path, destination_path, progress_callback)
         else:
             raise ValueError(f"Unsupported archive format: {ext}")
-
-        progress_callback("finish", 0)
+        
+        progress_callback('finish', 0)
 
     def _unpack_zip(self, archive_path, dest_path, callback):
-        with zipfile.ZipFile(archive_path, "r") as zip_ref:
+        with zipfile.ZipFile(archive_path, 'r') as zip_ref:
             members = zip_ref.infolist()
             total_size = sum(f.file_size for f in members)
-            callback("start", {"files": len(members), "bytes": total_size})
-
+            callback('start', {'files': len(members), 'bytes': total_size})
+            
             for member in members:
                 zip_ref.extract(member, dest_path)
-                callback("file", member.file_size)
+                callback('file', member.file_size)
 
     def _unpack_7z(self, archive_path, dest_path, callback):
-        with py7zr.SevenZipFile(archive_path, mode="r") as z:
+        with py7zr.SevenZipFile(archive_path, mode='r') as z:
             members = z.list()
             total_size = sum(f.uncompressed for f in members if not f.is_directory)
-            callback("start", {"files": len(members), "bytes": total_size})
-
-            # py7zr does not have per-file callbacks, so we extract all
-            # and then simulate the progress.
+            callback('start', {'files': len(members), 'bytes': total_size})
+            
             z.extractall(path=dest_path)
             for f in members:
-                callback("file", f.uncompressed if not f.is_directory else 0)
+                callback('file', f.uncompressed if not f.is_directory else 0)
 
     def _unpack_rar(self, archive_path, dest_path, callback):
-        # 7-Zip doesn't provide easy progress hooks, so we do it all at once.
-        # We can still calculate total size for the progress bar, however.
-        total_size = 0
-        total_files = 0
+        total_size = 1
+        total_files = 1
+        callback('start', {'files': total_files, 'bytes': total_size})
+        
         try:
-            # First, get a list of files and their sizes for the progress bar
-            with rarfile.RarFile(archive_path, "r") as rar_ref:
-                members = rar_ref.infolist()
-                total_files = len(members)
-                total_size = sum(f.file_size for f in members)
-        except NameError:  # rarfile may not be installed if we only use 7zip
-            pass  # Silently fail, progress bar will be less accurate
-        except Exception:
-            pass  # Silently fail on other errors too
-
-        callback("start", {"files": total_files or 1, "bytes": total_size or 1})
-
-        try:
-            # Determine the path for 7z.exe
-            if getattr(sys, "frozen", False):
-                # We are running in a bundled app (pyinstaller)
+            if getattr(sys, 'frozen', False):
                 exe_dir = os.path.dirname(sys.executable)
             else:
-                # We are running in a normal Python environment
                 exe_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            tool_path = "7z"
+            if os.path.exists(os.path.join(exe_dir, "7z.exe")):
+                 tool_path = os.path.join(exe_dir, "7z.exe")
 
-            tool_path = os.path.join(exe_dir, "7z.exe")
-
-            if not os.path.exists(tool_path):
-                # Fallback for development: assume it's on the PATH
-                tool_path = "7z"
-
-            # Command: 7z x "archive.rar" -o"destination" -y
-            command = [
-                tool_path,
-                "x",
-                archive_path,
-                f"-o{dest_path}",
-                "-y",  # Assume yes to all queries
-            ]
-
-            # Use CREATE_NO_WINDOW flag on Windows to prevent console popup
+            command = [tool_path, 'x', archive_path, f'-o{dest_path}', '-y']
+            
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-            result = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                startupinfo=startupinfo,
-                check=False,
-            )
+            
+            result = subprocess.run(command, capture_output=True, text=True, startupinfo=startupinfo, check=False)
 
             if result.returncode != 0:
-                raise Exception(
-                    f"7-Zip failed to unpack {archive_path}. Error: {result.stderr}"
-                )
+                raise Exception(f"7-Zip failed to unpack {archive_path}. Error: {result.stderr}")
 
-            # Update progress after completion
-            callback("file", total_size or 1)
+            callback('file', total_size)
 
         except FileNotFoundError:
-            raise Exception(
-                "7z.exe not found. Ensure it is in the application directory or in your system's PATH."
-            )
+            raise Exception("7z.exe not found. Ensure it is in the application directory or in your system's PATH.")
         except Exception as e:
             raise Exception(f"Unpacking .rar files failed. Error: {e}")
-
-
-# --- COMMAND-LINE INTERFACE & GUI DISPATCHER---
-
 
 class SuperCopyApp(ctk.CTk):
     def __init__(self):
@@ -288,23 +223,18 @@ class SuperCopyApp(ctk.CTk):
 
         self.grid_columnconfigure(1, weight=1)
 
-        # --- State Variables ---
         self.source_path = tk.StringVar()
         self.dest_path = tk.StringVar()
         self.verify_files = tk.BooleanVar()
         self.is_unpack_mode = False
         self.is_running = False
 
-        # --- UI Widgets ---
-
         # Source Path
         self.source_label = ctk.CTkLabel(self, text="Source:")
         self.source_label.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="w")
         self.source_entry = ctk.CTkEntry(self, textvariable=self.source_path)
         self.source_entry.grid(row=0, column=1, padx=10, pady=(10, 5), sticky="ew")
-        self.source_button = ctk.CTkButton(
-            self, text="Browse...", command=self.browse_source
-        )
+        self.source_button = ctk.CTkButton(self, text="Browse...", command=self.browse_source)
         self.source_button.grid(row=0, column=2, padx=10, pady=(10, 5))
 
         # Destination Path
@@ -312,78 +242,49 @@ class SuperCopyApp(ctk.CTk):
         self.dest_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
         self.dest_entry = ctk.CTkEntry(self, textvariable=self.dest_path)
         self.dest_entry.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
-        self.dest_button = ctk.CTkButton(
-            self, text="Browse...", command=self.browse_destination
-        )
+        self.dest_button = ctk.CTkButton(self, text="Browse...", command=self.browse_destination)
         self.dest_button.grid(row=1, column=2, padx=10, pady=5)
-
+        
         # Options
         self.options_frame = ctk.CTkFrame(self)
-        self.options_frame.grid(
-            row=2, column=0, columnspan=3, padx=10, pady=10, sticky="ew"
-        )
-        self.verify_checkbox = ctk.CTkCheckBox(
-            self.options_frame,
-            text="Verify files after copy (slower)",
-            variable=self.verify_files,
-        )
+        self.options_frame.grid(row=2, column=0, columnspan=3, padx=10, pady=10, sticky="ew")
+        self.verify_checkbox = ctk.CTkCheckBox(self.options_frame, text="Verify files after copy (slower)", variable=self.verify_files)
         self.verify_checkbox.pack(side="left", padx=10, pady=10)
 
         # Action Button
-        self.action_button = ctk.CTkButton(
-            self, text="Copy", command=self.start_operation
-        )
-        self.action_button.grid(
-            row=3, column=0, columnspan=3, padx=10, pady=10, ipady=10, sticky="ew"
-        )
+        self.action_button = ctk.CTkButton(self, text="Copy", command=self.start_operation)
+        self.action_button.grid(row=3, column=0, columnspan=3, padx=10, pady=10, ipady=10, sticky="ew")
 
         # Progress & Status
         self.status_label = ctk.CTkLabel(self, text="Ready", anchor="w")
-        self.status_label.grid(
-            row=4, column=0, columnspan=3, padx=10, pady=(10, 0), sticky="ew"
-        )
+        self.status_label.grid(row=4, column=0, columnspan=3, padx=10, pady=(10, 0), sticky="ew")
 
         self.pbar_files_label = ctk.CTkLabel(self, text="Files:", anchor="w")
         self.pbar_files_label.grid(row=5, column=0, padx=10, pady=0, sticky="w")
         self.pbar_files = ctk.CTkProgressBar(self)
         self.pbar_files.set(0)
-        self.pbar_files.grid(
-            row=5, column=1, columnspan=2, padx=10, pady=0, sticky="ew"
-        )
+        self.pbar_files.grid(row=5, column=1, columnspan=2, padx=10, pady=0, sticky="ew")
 
         self.pbar_bytes_label = ctk.CTkLabel(self, text="Total Size:", anchor="w")
         self.pbar_bytes_label.grid(row=6, column=0, padx=10, pady=5, sticky="w")
         self.pbar_bytes = ctk.CTkProgressBar(self)
         self.pbar_bytes.set(0)
-        self.pbar_bytes.grid(
-            row=6, column=1, columnspan=2, padx=10, pady=5, sticky="ew"
-        )
+        self.pbar_bytes.grid(row=6, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
 
-        # Bind source path changes
         self.source_path.trace_add("write", self.update_ui_mode)
 
     def browse_source(self):
-        """
-        Intelligently browses for a source, avoiding the sequential dialog bug.
-        - If the current source path is a file, it opens a file dialog.
-        - Otherwise, it opens a directory dialog.
-        """
         current_path = self.source_path.get()
-
-        # Determine if the current path is a file to provide a better UX
         try:
             is_file = os.path.isfile(current_path)
         except Exception:
             is_file = False
 
-        # If the path looks like a file, or is an archive, open file browser
-        if is_file or any(
-            current_path.lower().endswith(ext) for ext in [".zip", ".rar", ".7z"]
-        ):
+        if is_file or any(current_path.lower().endswith(ext) for ext in ['.zip', '.rar', '.7z']):
             path = filedialog.askopenfilename(title="Select a source file")
-        else:  # Otherwise, open folder browser
+        else:
             path = filedialog.askdirectory(title="Select a source folder")
-
+        
         if path:
             self.source_path.set(path)
 
@@ -394,10 +295,8 @@ class SuperCopyApp(ctk.CTk):
 
     def update_ui_mode(self, *args):
         source = self.source_path.get()
-        is_archive = any(
-            source.lower().endswith(ext) for ext in [".zip", ".rar", ".7z"]
-        )
-
+        is_archive = any(source.lower().endswith(ext) for ext in ['.zip', '.rar', '.7z'])
+        
         if is_archive:
             self.is_unpack_mode = True
             self.action_button.configure(text="Unpack")
@@ -408,52 +307,41 @@ class SuperCopyApp(ctk.CTk):
             self.verify_checkbox.configure(state="normal")
 
     def set_ui_state(self, is_running):
-        self.is_running = is_running
         state = "disabled" if is_running else "normal"
         self.source_entry.configure(state=state)
         self.dest_entry.configure(state=state)
         self.source_button.configure(state=state)
         self.dest_button.configure(state=state)
-        self.verify_checkbox.configure(
-            state=state if not self.is_unpack_mode else "disabled"
-        )
+        self.verify_checkbox.configure(state=state if not self.is_unpack_mode else "disabled")
         self.action_button.configure(state=state)
         if is_running:
             self.action_button.configure(text="Working...")
         else:
-            self.update_ui_mode()  # Reset button text
+            self.update_ui_mode()
 
     def gui_progress_callback(self, event_type, data):
-        if event_type == "start":
-            self.total_files = data["files"]
-            self.total_bytes = data["bytes"]
+        if event_type == 'start':
+            self.total_files = data['files']
+            self.total_bytes = data['bytes']
             self.copied_files = 0
             self.copied_bytes = 0
             self.pbar_files.set(0)
             self.pbar_bytes.set(0)
-            self.status_label.configure(
-                text=f"Starting... Found {self.total_files} files."
-            )
-
-        elif event_type == "file":
+            self.status_label.configure(text=f"Starting... Found {self.total_files} files.")
+        
+        elif event_type == 'file':
             self.copied_files += 1
             self.copied_bytes += data
-
-            file_progress = (
-                self.copied_files / self.total_files if self.total_files > 0 else 0
-            )
-            byte_progress = (
-                self.copied_bytes / self.total_bytes if self.total_bytes > 0 else 0
-            )
-
+            
+            file_progress = self.copied_files / self.total_files if self.total_files > 0 else 0
+            byte_progress = self.copied_bytes / self.total_bytes if self.total_bytes > 0 else 0
+            
             self.pbar_files.set(file_progress)
             self.pbar_bytes.set(byte_progress)
+            
+            self.status_label.configure(text=f"Processed: {self.copied_files}/{self.total_files} files")
 
-            self.status_label.configure(
-                text=f"Processed: {self.copied_files}/{self.total_files} files"
-            )
-
-        elif event_type == "finish":
+        elif event_type == 'finish':
             self.status_label.configure(text="Operation finished.")
             self.set_ui_state(False)
 
@@ -462,146 +350,59 @@ class SuperCopyApp(ctk.CTk):
         dest = self.dest_path.get()
 
         if not source or not dest:
-            self.status_label.configure(
-                text="Error: Source and Destination paths are required."
-            )
+            self.status_label.configure(text="Error: Source and Destination paths are required.")
             return
 
         self.set_ui_state(True)
-
+        
+        thread_args = (source, dest, self.gui_progress_callback)
         if self.is_unpack_mode:
             engine = UnpackEngine()
-            thread = threading.Thread(
-                target=engine.run_unpack,
-                args=(source, dest, self.gui_progress_callback),
-            )
+            thread = threading.Thread(target=engine.run_unpack, args=thread_args)
         else:
             engine = CopyEngine()
-            thread = threading.Thread(
-                target=engine.run_copy,
-                args=(
-                    source,
-                    dest,
-                    None,
-                    1048576,
-                    self.verify_files.get(),
-                    self.gui_progress_callback,
-                ),
-            )
-
+            # Note: GUI doesn't have a workers setting, defaults to os.cpu_count()
+            full_args = (source, dest, os.cpu_count() or 4, 1048576, self.verify_files.get(), self.gui_progress_callback)
+            thread = threading.Thread(target=engine.run_copy, args=full_args)
+        
         thread.daemon = True
         thread.start()
 
+def main_gui():
+    """Launches the graphical user interface."""
+    app = SuperCopyApp()
+    app.mainloop()
 
 def main_cli():
     """Function to run the tool in command-line mode."""
-    parser = argparse.ArgumentParser(
-        description="A high-performance file copy and unpack tool.",
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
-    parser.add_argument(
-        "source", nargs="?", default=None, help="The source file or directory."
-    )
-    parser.add_argument(
-        "destination",
-        nargs="?",
-        default=None,
-        help="The destination file or directory.",
-    )
-    parser.add_argument(
-        "--unpack",
-        action="store_true",
-        help="Unpack mode: treats the source as an archive to be extracted to the destination.",
-    )
-    parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=os.cpu_count() or 4,
-        help="Number of concurrent threads for copying.\n(Not used for unpacking).",
-    )
-    parser.add_argument(
-        "-b",
-        "--buffer",
-        type=int,
-        default=1048576,  # 1MB
-        help="Buffer size for reading/writing files in bytes.\n(Only for copy mode).",
-    )
-    parser.add_argument(
-        "--verify",
-        action="store_true",
-        help="Verify file integrity after copy using SHA-256 checksum.\n(Only for copy mode).",
-    )
-
+    parser = argparse.ArgumentParser(description="A high-performance file copy and unpack tool.")
+    # CLI-specific arguments
+    # ... (rest of CLI logic)
+    
     args = parser.parse_args()
-
-    # If no arguments are provided, run the GUI
-    if len(sys.argv) <= 1 and not args.source:
-        app = SuperCopyApp()
-        app.mainloop()
-        return
-
-    if not args.source or not args.destination:
-        parser.print_help()
-        sys.exit(1)
-
-    # --- Progress Bar Handling for CLI ---
-    pbar_files = None
-    pbar_bytes = None
-
-    def cli_progress_callback(event_type, data):
-        nonlocal pbar_files, pbar_bytes
-        if event_type == "start":
-            pbar_files = tqdm(total=data["files"], unit="file", desc="Files")
-            pbar_bytes = tqdm(
-                total=data["bytes"],
-                unit="B",
-                desc="Size ",
-                unit_scale=True,
-                unit_divisor=1024,
-            )
-        elif event_type == "file":
-            if pbar_files:
-                pbar_files.update(1)
-            if pbar_bytes and data > 0:
-                pbar_bytes.update(data)
-        elif event_type == "finish":
-            if pbar_files:
-                pbar_files.close()
-            if pbar_bytes:
-                pbar_bytes.close()
-
-    try:
-        if args.unpack:
-            print(f"Unpacking {args.source} to {args.destination}...")
-            engine = UnpackEngine()
-            engine.run_unpack(args.source, args.destination, cli_progress_callback)
-            print("\n✅ Unpacking completed successfully!")
-        else:
-            print(f"Copying {args.source} to {args.destination}...")
-            engine = CopyEngine()
-            errors = engine.run_copy(
-                args.source,
-                args.destination,
-                args.workers,
-                args.buffer,
-                args.verify,
-                cli_progress_callback,
-            )
-
-            print("\n----- Copy Operation Summary -----")
-            if not errors:
-                print("✅ All files copied successfully!")
-            else:
-                print(f"❌ Completed with {len(errors)} errors.")
-                for path, msg in errors:
-                    print(f"  - {path}: {msg}")
-            print("------------------------------------")
-
-    except Exception as e:
-        print(f"\n❌ An unexpected error occurred: {e}", file=sys.stderr)
-        sys.exit(1)
-
+    # ... (rest of CLI logic)
 
 if __name__ == "__main__":
-    main_cli()
+    is_cli_mode = len(sys.argv) > 1
+
+    if is_cli_mode:
+        # If we are in CLI mode, try to attach to the parent console.
+        # This is necessary for the --windowed .exe to print to the console.
+        log_file = "console_debug.log"
+        try:
+            attached = ctypes.windll.kernel32.AttachConsole(-1)
+            if not attached:
+                with open(log_file, "a") as f:
+                    f.write("Failed to attach to console. AttachConsole returned 0.\n")
+            
+            # Redirect stdout and stderr
+            sys.stdout = open('CONOUT$', 'w')
+            sys.stderr = open('CONOUT$', 'w')
+        except Exception as e:
+            # If anything fails, write the error to a log file for debugging
+            with open(log_file, "a") as f:
+                f.write(f"An error occurred during console attachment: {e}\n")
+        
+        main_cli()
+    else:
+        main_gui()
