@@ -1,28 +1,58 @@
 {
   "name": "@involvex/supercopy",
   "version": "0.0.4",
-  "description": "A high-performance file copy and unpack utility for Windows.",
-  "author": "Involvex",
+  "description": "A high-performance file copy and unpack utility for Windows with advanced features including progress tracking, multi-threading, and intelligent conflict resolution.",
+  "author": {
+    "name": "Involvex"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/involvex/supercopy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/involvex/supercopy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/involvex/supercopy/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "bin": {
     "supercopy": "bin/supercopy.js"
   },
   "scripts": {
-    "start": "node bin/supercopy.js"
+    "start": "node bin/supercopy.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "os": [
     "win32"
+  ],
+  "cpu": [
+    "x64",
+    "ia32"
   ],
   "keywords": [
     "copy",
     "file-utility",
     "performance",
     "windows",
-    "cli"
+    "cli",
+    "file-copy",
+    "batch-processing",
+    "file-management"
   ],
   "files": [
     "bin",
-    "dist/SuperCopy.exe"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
-  "preferGlobal": true
+  "preferGlobal": true,
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/involvex"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }
