@@ -11,7 +11,7 @@ set VENV_DIR=.venv
 set PYTHON_EXE=%VENV_DIR%\Scripts\python.exe
 set PYINSTALLER_EXE=%VENV_DIR%\Scripts\pyinstaller.exe
 set REQUIREMENTS_FILE=requirements.txt
-set MAIN_SCRIPT=supercopy_gui.py
+set MAIN_SCRIPT=supercopy.py
 set OUTPUT_NAME=SuperCopy
 
 :: 1. Check for and create the virtual environment

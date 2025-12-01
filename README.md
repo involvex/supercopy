@@ -10,8 +10,8 @@ It is designed to be significantly faster than the default Windows copy tool and
 
 - **Graphical User Interface (GUI):** A clean, modern, and easy-to-use interface for all copy and unpack operations.
 - **High-Performance Copying:**
-    - **Multi-Threaded:** Uses a pool of concurrent threads to copy multiple files in parallel.
-    - **Optimized Buffers:** Uses a large I/O buffer to speed up the transfer of large files.
+  - **Multi-Threaded:** Uses a pool of concurrent threads to copy multiple files in parallel.
+  - **Optimized Buffers:** Uses a large I/O buffer to speed up the transfer of large files.
 - **Archive Unpacking:** Unpack `.zip`, `.7z`, and `.rar` archives directly within the application.
 - **Real-Time Progress:** Dual progress bars show file-count progress and total size progress for any operation.
 - **Data Integrity Check:** Optional `--verify` flag in the CLI to perform a SHA-256 checksum on copied files.
@@ -37,8 +37,8 @@ Simply launch the SuperCopy application from your Start Menu.
 1.  **Select Source:** Click the "Browse" button to select a source file or directory.
 2.  **Select Destination:** Click the "Browse" button to select a destination directory.
 3.  **Choose Operation:**
-    -   If you select a normal file or folder, the main button will say **"Copy"**.
-    -   If you select a `.zip`, `.7z`, or `.rar` file, the button will automatically change to **"Unpack"**.
+    - If you select a normal file or folder, the main button will say **"Copy"**.
+    - If you select a `.zip`, `.7z`, or `.rar` file, the button will automatically change to **"Unpack"**.
 4.  **Set Options:** Check "Verify files" if you want to ensure data integrity after copying (this option is disabled for unpacking).
 5.  **Start:** Click the "Copy" or "Unpack" button to begin. Progress will be displayed in real-time.
 
@@ -47,6 +47,7 @@ Simply launch the SuperCopy application from your Start Menu.
 The original CLI is still available for scripting and automation.
 
 #### Copy Syntax
+
 ```
 supercopy <source> <destination> [options]
 ```
@@ -60,15 +61,16 @@ supercopy <source> <destination> [options]
   - `--verify`: Verify file integrity after copying using SHA-256.
 
 #### Unpack Syntax
+
 ```
 supercopy <archive_path> <destination_path> --unpack
 ```
+
 - **Arguments:**
   - `archive_path`: The `.zip`, `.7z`, or `.rar` file to unpack.
   - `destination_path`: The folder where files will be extracted.
 - **Required Flag:**
   - `--unpack`: Switches the tool to unpacking mode.
-
 
 ---
 
@@ -78,12 +80,12 @@ If you wish to build the executable yourself:
 
 1.  **Install Python:** Make sure you have Python 3.9+ installed.
 2.  **Install NSIS:** Download and install [NSIS (Nullsoft Scriptable Install System)](https://nsis.sourceforge.io/Download). Make sure its directory is added to your system's PATH.
-3.  **Get UnRAR utility:**
-    -   Download the "UnRAR for Windows" command-line tool from the [official RARLAB website](https://www.rarlab.com/rar_add.htm).
-    -   Extract the contents and place `unrar.exe` inside the `assets` directory in the project root.
+3.  **Ensure 7-Zip is installed:**
+    - The SuperCopy application relies on `7z.exe` being available in your system's PATH for RAR unpacking.
+    - If you do not have 7-Zip installed, download it from the [official 7-Zip website](https://www.7-zip.org/download.html) and install it. Ensure its executable directory is added to your system's PATH.
+    - You no longer need to place `7z.exe` in the `assets` folder.
 4.  **Run the Build Script:** Simply run the `build.bat` script.
-    -   It will automatically create a virtual environment, install all Python dependencies, and run PyInstaller to create `dist\SuperCopy.exe`.
+    - It will automatically create a virtual environment, install all Python dependencies, and run PyInstaller to create `dist\SuperCopy.exe`.
 5.  **Compile the Installer:**
-    -   After the build script is finished, right-click on `installer.nsi` and select "Compile NSIS Script".
-    -   This will generate the final `SuperCopy-Installer.exe` in the project root directory.
-
+    - After the build script is finished, right-click on `installer.nsi` and select "Compile NSIS Script".
+    - This will generate the final `SuperCopy-Installer.exe` in the project root directory.
