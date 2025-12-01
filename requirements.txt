@@ -1,0 +1,5 @@
+customtkinter
+tqdm
+pyinstaller
+py7zr
+rarfile

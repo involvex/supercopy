@@ -1,96 +1,89 @@
 # SuperCopy
 
-SuperCopy is a high-performance, command-line file and folder copy utility for Windows, designed to be significantly faster than the default copy tools, especially for large numbers of files.
+SuperCopy is a high-performance file utility for Windows. It started as a command-line tool to accelerate file copying and has now evolved into a full-featured desktop application with a graphical user interface (GUI).
 
-It is built in Python and leverages multi-threading and optimized I/O buffers to maximize copy speed.
+It is designed to be significantly faster than the default Windows copy tool and now also supports unpacking for major archive formats.
 
 ---
 
 ## Features
 
-- **Multi-Threaded Copying:** Uses a pool of concurrent threads to copy multiple files in parallel, drastically reducing the time it takes to copy directories with thousands of small files.
-- **Optimized Buffer Size:** Uses a large, 1MB I/O buffer to speed up the transfer of large files by minimizing disk read/write operations.
-- **Real-Time Progress Bar:** Displays a detailed progress bar showing the number of files copied, progress percentage, and transfer rate.
-- **Data Integrity Check:** Includes an optional `--verify` flag that performs a SHA-256 checksum on each file after it's copied to guarantee that the destination file is a perfect match to the source.
-- **Simple Installation:** A basic batch script installer is provided to make the tool available system-wide from any terminal.
-- **Robust Error Handling:** Reports a summary of any files that failed to copy at the end of the operation.
+- **Graphical User Interface (GUI):** A clean, modern, and easy-to-use interface for all copy and unpack operations.
+- **High-Performance Copying:**
+    - **Multi-Threaded:** Uses a pool of concurrent threads to copy multiple files in parallel.
+    - **Optimized Buffers:** Uses a large I/O buffer to speed up the transfer of large files.
+- **Archive Unpacking:** Unpack `.zip`, `.7z`, and `.rar` archives directly within the application.
+- **Real-Time Progress:** Dual progress bars show file-count progress and total size progress for any operation.
+- **Data Integrity Check:** Optional `--verify` flag in the CLI to perform a SHA-256 checksum on copied files.
+- **Professional Installer:** A simple and clean installer for easy system setup.
 
 ---
 
 ## Installation
 
-A standalone executable (`SuperCopy.exe`) is created using PyInstaller. An installer script is provided to add it to your system's PATH.
-
-1. Ensure you have run the build process to create `dist\SuperCopy.exe`.
-2. Right-click on `install.bat` and select **"Run as administrator"**.
-3. Follow the on-screen prompts. The script will copy the executable to `%LOCALAPPDATA%\SuperCopy` and add this directory to your user PATH environment variable.
-4. **Important:** You must **restart your terminal** (Command Prompt, PowerShell, etc.) for the PATH changes to take effect.
-
-After restarting your terminal, you can invoke the tool from any directory by simply typing `SuperCopy`.
+1.  Download the latest `SuperCopy-Installer.exe` from the project's releases page.
+2.  Run the installer and follow the on-screen instructions.
+3.  The installer will automatically add SuperCopy to your system PATH and create a Start Menu shortcut.
+4.  You can now launch SuperCopy from the Start Menu or use the `supercopy` command in any terminal.
 
 ---
+
 ## Usage
 
-The tool is invoked from the command line with a source and a destination path.
+### GUI Mode
 
-### Syntax
+Simply launch the SuperCopy application from your Start Menu.
+
+1.  **Select Source:** Click the "Browse" button to select a source file or directory.
+2.  **Select Destination:** Click the "Browse" button to select a destination directory.
+3.  **Choose Operation:**
+    -   If you select a normal file or folder, the main button will say **"Copy"**.
+    -   If you select a `.zip`, `.7z`, or `.rar` file, the button will automatically change to **"Unpack"**.
+4.  **Set Options:** Check "Verify files" if you want to ensure data integrity after copying (this option is disabled for unpacking).
+5.  **Start:** Click the "Copy" or "Unpack" button to begin. Progress will be displayed in real-time.
+
+### Command-Line Mode
+
+The original CLI is still available for scripting and automation.
+
+#### Copy Syntax
 ```
-SuperCopy <source> <destination> [options]
-```
-
-### Arguments
-- `source`: The source file or directory to copy.
-- `destination`: The destination path.
-  - If the destination is a directory, the source file/folder will be copied *inside* it.
-  - If the destination does not exist, it will be created.
-
-### Options
-- `-w, --workers`: The number of concurrent threads to use for copying.
-  - *Default*: The number of CPU cores on your system.
-- `-b, --buffer`: The buffer size for reading/writing files, in bytes.
-  - *Default*: `1048576` (1MB).
-- `--verify`: Verifies file integrity after copying using a SHA-256 checksum.
-  - *Note*: This will significantly slow down the copy process but guarantees data integrity.
-
-### Examples
-
-**1. Copy a single file:**
-```shell
-SuperCopy "C:\Users\MyUser\Documents\report.docx" "D:\Backups\"
+supercopy <source> <destination> [options]
 ```
 
-**2. Copy an entire directory:**
-```shell
-SuperCopy "C:\Users\MyUser\Pictures" "D:\Backups\MyPictures"
-```
+- **Arguments:**
+  - `source`: The source file or directory to copy.
+  - `destination`: The destination path.
+- **Options:**
+  - `-w, --workers`: Number of concurrent threads to use.
+  - `-b, --buffer`: I/O buffer size in bytes.
+  - `--verify`: Verify file integrity after copying using SHA-256.
 
-**3. Copy a directory using 16 worker threads:**
-```shell
-SuperCopy "C:\Project" "E:\Archives" --workers 16
+#### Unpack Syntax
 ```
+supercopy <archive_path> <destination_path> --unpack
+```
+- **Arguments:**
+  - `archive_path`: The `.zip`, `.7z`, or `.rar` file to unpack.
+  - `destination_path`: The folder where files will be extracted.
+- **Required Flag:**
+  - `--unpack`: Switches the tool to unpacking mode.
 
-**4. Copy a directory and verify the integrity of every file:**
-```shell
-SuperCopy "C:\ImportantData" "F:\VerifiedBackup" --verify
-```
 
 ---
+
 ## Build from Source
 
 If you wish to build the executable yourself:
-1. Make sure you have Python installed.
-2. Create and activate a virtual environment:
-   ```shell
-   python -m venv .venv
-   .\.venv\Scripts\activate
-   ```
-3. Install the required packages:
-   ```shell
-   pip install -r requirements.txt 
-   ```
-   (Note: You would need to create a `requirements.txt` file containing `tqdm` and `pyinstaller`).
-4. Run the PyInstaller build command:
-   ```shell
-   pyinstaller --onefile --console --name SuperCopy supercopy.py
-   ```
-5. The final executable will be located in the `dist` directory.
+
+1.  **Install Python:** Make sure you have Python 3.9+ installed.
+2.  **Install NSIS:** Download and install [NSIS (Nullsoft Scriptable Install System)](https://nsis.sourceforge.io/Download). Make sure its directory is added to your system's PATH.
+3.  **Get UnRAR utility:**
+    -   Download the "UnRAR for Windows" command-line tool from the [official RARLAB website](https://www.rarlab.com/rar_add.htm).
+    -   Extract the contents and place `unrar.exe` inside the `assets` directory in the project root.
+4.  **Run the Build Script:** Simply run the `build.bat` script.
+    -   It will automatically create a virtual environment, install all Python dependencies, and run PyInstaller to create `dist\SuperCopy.exe`.
+5.  **Compile the Installer:**
+    -   After the build script is finished, right-click on `installer.nsi` and select "Compile NSIS Script".
+    -   This will generate the final `SuperCopy-Installer.exe` in the project root directory.
+
