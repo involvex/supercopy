@@ -1,6 +1,6 @@
 {
   "name": "@involvex/supercopy",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A high-performance file copy and unpack utility for Windows.",
   "author": "Involvex",
   "license": "MIT",
