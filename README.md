@@ -15,16 +15,24 @@ It is designed to be significantly faster than the default Windows copy tool and
 - **Archive Unpacking:** Unpack `.zip`, `.7z`, and `.rar` archives directly within the application.
 - **Real-Time Progress:** Dual progress bars show file-count progress and total size progress for any operation.
 - **Data Integrity Check:** Optional `--verify` flag in the CLI to perform a SHA-256 checksum on copied files.
-- **Professional Installer:** A simple and clean installer for easy system setup.
 
 ---
 
 ## Installation
 
-1.  Download the latest `SuperCopy-Installer.exe` from the project's releases page.
-2.  Run the installer and follow the on-screen instructions.
-3.  The installer will automatically add SuperCopy to your system PATH and create a Start Menu shortcut.
-4.  You can now launch SuperCopy from the Start Menu or use the `supercopy` command in any terminal.
+To install SuperCopy globally via npm, you need Node.js and npm installed on your system.
+
+1.  **Install Node.js & npm:** If you don't have them, download and install Node.js from [nodejs.org](https://nodejs.org/). npm is included with Node.js.
+2.  **Install SuperCopy:** Open your terminal (Command Prompt, PowerShell, Git Bash) and run:
+    ```shell
+    npm install -g @involvex/supercopy
+    ```
+3.  **Usage:** After installation, you can launch the GUI by typing `supercopy` or use the CLI with arguments:
+    ```shell
+    supercopy
+    supercopy --help
+    supercopy <source> <destination> --unpack
+    ```
 
 ---
 
@@ -74,18 +82,28 @@ supercopy <archive_path> <destination_path> --unpack
 
 ---
 
-## Build from Source
+## Build from Source (for Developers)
 
-If you wish to build the executable yourself:
+If you wish to build the `SuperCopy.exe` executable yourself (e.g., to make changes or prepare a new version for npm publishing):
 
-1.  **Install Python:** Make sure you have Python 3.9+ installed.
-2.  **Install NSIS:** Download and install [NSIS (Nullsoft Scriptable Install System)](https://nsis.sourceforge.io/Download). Make sure its directory is added to your system's PATH.
-3.  **Ensure 7-Zip is installed:**
+1.  **Prerequisites:**
+    - Python 3.9+ installed and added to your system PATH.
+    - Node.js and npm installed (if you plan to publish to npm).
+    - Basic understanding of command-line operations.
+2.  **Clone the Repository:**
+    ```shell
+    git clone <your-repo-url>
+    cd supercopy
+    ```
+3.  **Prepare 7-Zip (for unpacking .rar files):**
     - The SuperCopy application relies on `7z.exe` being available in your system's PATH for RAR unpacking.
     - If you do not have 7-Zip installed, download it from the [official 7-Zip website](https://www.7-zip.org/download.html) and install it. Ensure its executable directory is added to your system's PATH.
-    - You no longer need to place `7z.exe` in the `assets` folder.
-4.  **Run the Build Script:** Simply run the `build.bat` script.
-    - It will automatically create a virtual environment, install all Python dependencies, and run PyInstaller to create `dist\SuperCopy.exe`.
-5.  **Compile the Installer:**
-    - After the build script is finished, right-click on `installer.nsi` and select "Compile NSIS Script".
-    - This will generate the final `SuperCopy-Installer.exe` in the project root directory.
+4.  **Run the Build Script:**
+    - Execute the `build.bat` script in the project root:
+    ```shell
+    build.bat
+    ```
+    - This script will automatically create a Python virtual environment, install all Python dependencies (`customtkinter`, `tqdm`, `pyinstaller`, `py7zr`), and run PyInstaller to create `dist\SuperCopy.exe`.
+5.  **Locate the Executable:**
+    - The final executable, `SuperCopy.exe`, will be located in the `dist` directory.
+
