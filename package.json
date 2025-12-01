@@ -1,0 +1,25 @@
+{
+  "name": "@involvex/supercopy",
+  "version": "0.0.1",
+  "description": "A high-performance file copy and unpack utility for Windows.",
+  "author": "Involvex",
+  "license": "MIT",
+  "bin": {
+    "supercopy": "bin/supercopy.js"
+  },
+  "os": [
+    "win32"
+  ],
+  "keywords": [
+    "copy",
+    "file-utility",
+    "performance",
+    "windows",
+    "cli"
+  ],
+  "files": [
+    "bin",
+    "dist/SuperCopy.exe"
+  ],
+  "preferGlobal": true
+}
