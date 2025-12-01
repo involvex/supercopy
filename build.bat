@@ -41,7 +41,7 @@ echo.
 :: 3. Run PyInstaller to build the executable
 echo Building executable with PyInstaller...
 echo This may take a few minutes.
-%PYINSTALLER_EXE% --name "%OUTPUT_NAME%" --onefile --windowed --icon=NONE "%MAIN_SCRIPT%"
+%PYINSTALLER_EXE% --name "%OUTPUT_NAME%" --onefile --icon=NONE "%MAIN_SCRIPT%"
 
 if errorlevel 1 (
     echo ERROR: PyInstaller failed to build the executable.

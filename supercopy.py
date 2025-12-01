@@ -375,34 +375,90 @@ def main_gui():
 
 def main_cli():
     """Function to run the tool in command-line mode."""
-    parser = argparse.ArgumentParser(description="A high-performance file copy and unpack tool.")
-    # CLI-specific arguments
-    # ... (rest of CLI logic)
+    parser = argparse.ArgumentParser(
+        description="A high-performance file copy and unpack tool.",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument("source", help="The source file or directory.")
+    parser.add_argument("destination", help="The destination file or directory.")
+    parser.add_argument(
+        "--unpack", action="store_true",
+        help="Unpack mode: treats the source as an archive to be extracted to the destination."
+    )
+    parser.add_argument(
+        "-w", "--workers", type=int, default=os.cpu_count() or 4,
+        help="Number of concurrent threads for copying.\n(Not used for unpacking)."
+    )
+    parser.add_argument(
+        "-b", "--buffer", type=int, default=1048576,  # 1MB
+        help="Buffer size for reading/writing files in bytes.\n(Only for copy mode)."
+    )
+    parser.add_argument(
+        "--verify", action="store_true",
+        help="Verify file integrity after copy using SHA-256 checksum.\n(Only for copy mode)."
+    )
     
     args = parser.parse_args()
-    # ... (rest of CLI logic)
+
+    # --- Progress Bar Handling for CLI ---
+    pbar_files = None
+    pbar_bytes = None
+
+    def cli_progress_callback(event_type, data):
+        nonlocal pbar_files, pbar_bytes
+        if event_type == 'start':
+            pbar_files = tqdm(total=data['files'], unit='file', desc="Files")
+            pbar_bytes = tqdm(total=data['bytes'], unit='B', desc="Size ", unit_scale=True, unit_divisor=1024)
+        elif event_type == 'file':
+            if pbar_files: pbar_files.update(1)
+            if pbar_bytes and data > 0: pbar_bytes.update(data)
+        elif event_type == 'finish':
+            if pbar_files: pbar_files.close()
+            if pbar_bytes: pbar_bytes.close()
+
+    try:
+        if args.unpack:
+            print(f"Unpacking {args.source} to {args.destination}...")
+            engine = UnpackEngine()
+            engine.run_unpack(args.source, args.destination, cli_progress_callback)
+            print("\n✅ Unpacking completed successfully!")
+        else:
+            print(f"Copying {args.source} to {args.destination}...")
+            engine = CopyEngine()
+            errors = engine.run_copy(
+                args.source, args.destination,
+                args.workers, args.buffer, args.verify,
+                cli_progress_callback
+            )
+
+            print("\n----- Copy Operation Summary -----")
+            if not errors:
+                print("✅ All files copied successfully!")
+            else:
+                print(f"❌ Completed with {len(errors)} errors.")
+                for path, msg in errors:
+                    print(f"  - {path}: {msg}")
+            print("------------------------------------")
+
+    except Exception as e:
+        print(f"\n❌ An unexpected error occurred: {e}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     is_cli_mode = len(sys.argv) > 1
 
     if is_cli_mode:
-        # If we are in CLI mode, try to attach to the parent console.
-        # This is necessary for the --windowed .exe to print to the console.
-        log_file = "console_debug.log"
-        try:
-            attached = ctypes.windll.kernel32.AttachConsole(-1)
-            if not attached:
-                with open(log_file, "a") as f:
-                    f.write("Failed to attach to console. AttachConsole returned 0.\n")
-            
-            # Redirect stdout and stderr
-            sys.stdout = open('CONOUT$', 'w')
-            sys.stderr = open('CONOUT$', 'w')
-        except Exception as e:
-            # If anything fails, write the error to a log file for debugging
-            with open(log_file, "a") as f:
-                f.write(f"An error occurred during console attachment: {e}\n")
-        
+        # App is built as a console app, so CLI mode works by default.
         main_cli()
     else:
+        # We are in GUI mode. Hide the console window that is created by default.
+        try:
+            # Get a handle to the console window
+            console_window = ctypes.windll.kernel32.GetConsoleWindow()
+            if console_window != 0:
+                # Hide the console window (0 = SW_HIDE)
+                ctypes.windll.user32.ShowWindow(console_window, 0)
+        except Exception:
+            # This might fail if not running in a console, which is fine.
+            pass
         main_gui()
