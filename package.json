@@ -7,6 +7,9 @@
   "bin": {
     "supercopy": "bin/supercopy.js"
   },
+  "scripts": {
+    "start": "node bin/supercopy.js"
+  },
   "os": [
     "win32"
   ],
