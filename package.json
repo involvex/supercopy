@@ -1,6 +1,6 @@
 {
   "name": "@involvex/supercopy",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A high-performance file copy and unpack utility for Windows with advanced features including progress tracking, multi-threading, and intelligent conflict resolution.",
   "author": {
     "name": "Involvex"
