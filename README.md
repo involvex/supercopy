@@ -103,7 +103,7 @@ If you wish to build the `SuperCopy.exe` executable yourself (e.g., to make chan
     ```shell
     build.bat
     ```
+
     - This script will automatically create a Python virtual environment, install all Python dependencies (`customtkinter`, `tqdm`, `pyinstaller`, `py7zr`), and run PyInstaller to create `dist\SuperCopy.exe`.
 5.  **Locate the Executable:**
     - The final executable, `SuperCopy.exe`, will be located in the `dist` directory.
-
