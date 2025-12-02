@@ -6,6 +6,7 @@ import hashlib
 import zipfile
 import py7zr
 import subprocess
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
@@ -267,12 +268,15 @@ class SuperCopyApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("SuperCopy")
-        self.geometry("600x450")
-        ctk.set_appearance_mode("System")
+        self.title("SuperCopy - High Performance File Operations")
+        self.geometry("750x650")
+        ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
-
-        self.grid_columnconfigure(1, weight=1)
+        
+        # Configure grid
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=3)
+        self.grid_columnconfigure(2, weight=1)
 
         self.source_path = tk.StringVar()
         self.dest_path = tk.StringVar()
@@ -280,69 +284,196 @@ class SuperCopyApp(ctk.CTk):
         self.is_unpack_mode = False
         self.is_running = False
 
-        # Source Path
-        self.source_label = ctk.CTkLabel(self, text="Source:")
-        self.source_label.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="w")
-        self.source_entry = ctk.CTkEntry(self, textvariable=self.source_path)
-        self.source_entry.grid(row=0, column=1, padx=10, pady=(10, 5), sticky="ew")
+        # Main container with padding
+        self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.main_frame.grid(row=0, column=0, columnspan=3, padx=20, pady=20, sticky="nsew")
+        self.main_frame.grid_columnconfigure(1, weight=1)
+
+        # Header Section
+        self.header_frame = ctk.CTkFrame(self.main_frame, height=100, corner_radius=15)
+        self.header_frame.grid(row=0, column=0, columnspan=3, padx=0, pady=(0, 20), sticky="ew")
+        self.header_frame.grid_propagate(False)
+        
+        # Add a subtle gradient-like effect using multiple labels
+        self.title_label = ctk.CTkLabel(
+            self.header_frame, 
+            text=" SuperCopy", 
+            font=ctk.CTkFont(size=32, weight="bold")
+        )
+        self.title_label.pack(pady=(20, 5))
+        
+        self.subtitle_label = ctk.CTkLabel(
+            self.header_frame,
+            text="High-Performance File Copying & Archive Unpacking",
+            font=ctk.CTkFont(size=14),
+            text_color="lightgray"
+        )
+        self.subtitle_label.pack()
+        
+        # Version info
+        version = get_version_from_package_json()
+        self.version_label = ctk.CTkLabel(
+            self.header_frame,
+            text=f"Version {version}",
+            font=ctk.CTkFont(size=12),
+            text_color="gray"
+        )
+        self.version_label.pack()
+
+        # Source Section Card
+        self.source_card = ctk.CTkFrame(self.main_frame)
+        self.source_card.grid(row=1, column=0, columnspan=3, padx=0, pady=(0, 15), sticky="ew")
+        
+        self.source_title = ctk.CTkLabel(
+            self.source_card, 
+            text="📁 Source Location", 
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        self.source_title.pack(pady=(15, 10))
+        
+        source_inner_frame = ctk.CTkFrame(self.source_card, fg_color="transparent")
+        source_inner_frame.pack(fill="x", padx=20, pady=(0, 15))
+        source_inner_frame.grid_columnconfigure(1, weight=1)
+        
+        self.source_entry = ctk.CTkEntry(
+            source_inner_frame, 
+            textvariable=self.source_path,
+            placeholder_text="Select source file or folder..."
+        )
+        self.source_entry.grid(row=0, column=1, padx=(10, 5), pady=5, sticky="ew")
         self.source_button = ctk.CTkButton(
-            self, text="Browse...", command=self.browse_source
+            source_inner_frame, 
+            text="Browse", 
+            command=self.browse_source,
+            width=80
         )
-        self.source_button.grid(row=0, column=2, padx=10, pady=(10, 5))
+        self.source_button.grid(row=0, column=2, padx=5, pady=5)
 
-        # Destination Path
-        self.dest_label = ctk.CTkLabel(self, text="Destination:")
-        self.dest_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        self.dest_entry = ctk.CTkEntry(self, textvariable=self.dest_path)
-        self.dest_entry.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
+        # Destination Section Card
+        self.dest_card = ctk.CTkFrame(self.main_frame)
+        self.dest_card.grid(row=2, column=0, columnspan=3, padx=0, pady=(0, 15), sticky="ew")
+        
+        self.dest_title = ctk.CTkLabel(
+            self.dest_card, 
+            text="📍 Destination Location", 
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        self.dest_title.pack(pady=(15, 10))
+        
+        dest_inner_frame = ctk.CTkFrame(self.dest_card, fg_color="transparent")
+        dest_inner_frame.pack(fill="x", padx=20, pady=(0, 15))
+        dest_inner_frame.grid_columnconfigure(1, weight=1)
+        
+        self.dest_entry = ctk.CTkEntry(
+            dest_inner_frame, 
+            textvariable=self.dest_path,
+            placeholder_text="Select destination folder..."
+        )
+        self.dest_entry.grid(row=0, column=1, padx=(10, 5), pady=5, sticky="ew")
         self.dest_button = ctk.CTkButton(
-            self, text="Browse...", command=self.browse_destination
+            dest_inner_frame, 
+            text="Browse", 
+            command=self.browse_destination,
+            width=80
         )
-        self.dest_button.grid(row=1, column=2, padx=10, pady=5)
+        self.dest_button.grid(row=0, column=2, padx=5, pady=5)
 
-        # Options
-        self.options_frame = ctk.CTkFrame(self)
-        self.options_frame.grid(
-            row=2, column=0, columnspan=3, padx=10, pady=10, sticky="ew"
+        # Options Section Card
+        self.options_card = ctk.CTkFrame(self.main_frame)
+        self.options_card.grid(row=3, column=0, columnspan=3, padx=0, pady=(0, 20), sticky="ew")
+        
+        self.options_title = ctk.CTkLabel(
+            self.options_card, 
+            text="⚙️ Options", 
+            font=ctk.CTkFont(size=16, weight="bold")
         )
+        self.options_title.pack(pady=(15, 10))
+        
+        self.options_inner_frame = ctk.CTkFrame(self.options_card, fg_color="transparent")
+        self.options_inner_frame.pack(fill="x", padx=20, pady=(0, 15))
+        
         self.verify_checkbox = ctk.CTkCheckBox(
-            self.options_frame,
-            text="Verify files after copy (slower)",
+            self.options_inner_frame,
+            text="✅ Verify files after copy (slower but more secure)",
             variable=self.verify_files,
+            font=ctk.CTkFont(size=14)
         )
-        self.verify_checkbox.pack(side="left", padx=10, pady=10)
+        self.verify_checkbox.pack(anchor="w", pady=5)
 
-        # Action Button
+        # Action Button Section
+        self.action_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        self.action_frame.grid(row=4, column=0, columnspan=3, padx=0, pady=(0, 20), sticky="ew")
+        
         self.action_button = ctk.CTkButton(
-            self, text="Copy", command=self.start_operation
+            self.action_frame, 
+            text="🚀 Start Operation", 
+            command=self.start_operation,
+            height=50,
+            font=ctk.CTkFont(size=16, weight="bold")
         )
-        self.action_button.grid(
-            row=3, column=0, columnspan=3, padx=10, pady=10, ipady=10, sticky="ew"
-        )
+        self.action_button.pack(fill="x", pady=10)
 
-        # Progress & Status
-        self.status_label = ctk.CTkLabel(self, text="Ready", anchor="w")
-        self.status_label.grid(
-            row=4, column=0, columnspan=3, padx=10, pady=(10, 0), sticky="ew"
+        # Progress Section Card
+        self.progress_card = ctk.CTkFrame(self.main_frame)
+        self.progress_card.grid(row=5, column=0, columnspan=3, padx=0, pady=(0, 10), sticky="ew")
+        
+        self.progress_title = ctk.CTkLabel(
+            self.progress_card, 
+            text="📊 Progress", 
+            font=ctk.CTkFont(size=16, weight="bold")
         )
-
-        self.pbar_files_label = ctk.CTkLabel(self, text="Files:", anchor="w")
-        self.pbar_files_label.grid(row=5, column=0, padx=10, pady=0, sticky="w")
-        self.pbar_files = ctk.CTkProgressBar(self)
+        self.progress_title.pack(pady=(15, 10))
+        
+        self.status_label = ctk.CTkLabel(
+            self.progress_card, 
+            text="Ready to start", 
+            font=ctk.CTkFont(size=14),
+            anchor="w"
+        )
+        self.status_label.pack(fill="x", padx=20, pady=(0, 10))
+        
+        # File progress
+        self.files_frame = ctk.CTkFrame(self.progress_card, fg_color="transparent")
+        self.files_frame.pack(fill="x", padx=20, pady=(0, 5))
+        
+        self.pbar_files_label = ctk.CTkLabel(self.files_frame, text="📄 Files Progress:", anchor="w")
+        self.pbar_files_label.pack(anchor="w")
+        
+        self.pbar_files = ctk.CTkProgressBar(self.progress_card, height=20)
+        self.pbar_files.pack(fill="x", padx=20, pady=(0, 10))
         self.pbar_files.set(0)
-        self.pbar_files.grid(
-            row=5, column=1, columnspan=2, padx=10, pady=0, sticky="ew"
-        )
-
-        self.pbar_bytes_label = ctk.CTkLabel(self, text="Total Size:", anchor="w")
-        self.pbar_bytes_label.grid(row=6, column=0, padx=10, pady=5, sticky="w")
-        self.pbar_bytes = ctk.CTkProgressBar(self)
+        
+        # Size progress
+        self.size_frame = ctk.CTkFrame(self.progress_card, fg_color="transparent")
+        self.size_frame.pack(fill="x", padx=20, pady=(0, 5))
+        
+        self.pbar_bytes_label = ctk.CTkLabel(self.size_frame, text="💾 Data Progress:", anchor="w")
+        self.pbar_bytes_label.pack(anchor="w")
+        
+        self.pbar_bytes = ctk.CTkProgressBar(self.progress_card, height=20)
+        self.pbar_bytes.pack(fill="x", padx=20, pady=(0, 15))
         self.pbar_bytes.set(0)
-        self.pbar_bytes.grid(
-            row=6, column=1, columnspan=2, padx=10, pady=5, sticky="ew"
-        )
+
+        # Configure main window grid
+        self.grid_rowconfigure(0, weight=1)
 
         self.source_path.trace_add("write", self.update_ui_mode)
+        
+        # Add keyboard shortcuts
+        self.bind('<Control-o>', lambda e: self.browse_source())
+        self.bind('<Control-d>', lambda e: self.browse_destination())
+        self.bind('<Return>', lambda e: self.start_operation() if not self.is_running else None)
+        
+        # Center window on screen
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f'{width}x{height}+{x}+{y}')
+        
+        # Set minimum window size
+        self.minsize(650, 600)
 
     def browse_source(self):
         current_path = self.source_path.get()
@@ -374,12 +505,16 @@ class SuperCopyApp(ctk.CTk):
 
         if is_archive:
             self.is_unpack_mode = True
-            self.action_button.configure(text="Unpack")
+            self.action_button.configure(text="📦 Unpack Archive")
             self.verify_checkbox.configure(state="disabled")
+            self.source_title.configure(text="📦 Archive File")
+            self.progress_title.configure(text="📦 Unpacking Progress")
         else:
             self.is_unpack_mode = False
-            self.action_button.configure(text="Copy")
+            self.action_button.configure(text=" Start Copy")
             self.verify_checkbox.configure(state="normal")
+            self.source_title.configure(text="📁 Source Location")
+            self.progress_title.configure(text="📊 Progress")
 
     def set_ui_state(self, is_running):
         state = "disabled" if is_running else "normal"
@@ -392,7 +527,7 @@ class SuperCopyApp(ctk.CTk):
         )
         self.action_button.configure(state=state)
         if is_running:
-            self.action_button.configure(text="Working...")
+            self.action_button.configure(text="⚡ Processing...")
         else:
             self.update_ui_mode()
 
@@ -404,9 +539,21 @@ class SuperCopyApp(ctk.CTk):
             self.copied_bytes = 0
             self.pbar_files.set(0)
             self.pbar_bytes.set(0)
-            self.status_label.configure(
-                text=f"Starting... Found {self.total_files} files."
-            )
+            
+            if self.is_unpack_mode:
+                status_text = f"🗂️ Starting unpacking... Found {self.total_files} items"
+            else:
+                status_text = f"📋 Starting copy... Found {self.total_files} files"
+            
+            if self.total_bytes > 0:
+                size_mb = self.total_bytes / (1024 * 1024)
+                if size_mb > 1024:
+                    size_text = f" ({size_mb/1024:.1f} GB)"
+                else:
+                    size_text = f" ({size_mb:.1f} MB)"
+                status_text += size_text
+            
+            self.status_label.configure(text=status_text)
 
         elif event_type == "file":
             self.copied_files += 1
@@ -422,12 +569,37 @@ class SuperCopyApp(ctk.CTk):
             self.pbar_files.set(file_progress)
             self.pbar_bytes.set(byte_progress)
 
-            self.status_label.configure(
-                text=f"Processed: {self.copied_files}/{self.total_files} files"
-            )
+            # Calculate speed and ETA
+            elapsed_time = time.time() - getattr(self, 'start_time', time.time())
+            if elapsed_time > 0:
+                bytes_per_second = self.copied_bytes / elapsed_time
+                if bytes_per_second > 0:
+                    remaining_bytes = self.total_bytes - self.copied_bytes
+                    eta_seconds = remaining_bytes / bytes_per_second
+                    
+                    if eta_seconds < 60:
+                        eta_text = f" - ETA: {eta_seconds:.0f}s"
+                    elif eta_seconds < 3600:
+                        eta_text = f" - ETA: {eta_seconds/60:.0f}m"
+                    else:
+                        eta_text = f" - ETA: {eta_seconds/3600:.1f}h"
+                else:
+                    eta_text = ""
+            else:
+                eta_text = ""
+
+            if self.is_unpack_mode:
+                status_text = f"📦 Extracted: {self.copied_files}/{self.total_files} files{eta_text}"
+            else:
+                status_text = f"📋 Copied: {self.copied_files}/{self.total_files} files{eta_text}"
+
+            self.status_label.configure(text=status_text)
 
         elif event_type == "finish":
-            self.status_label.configure(text="Operation finished.")
+            if self.is_unpack_mode:
+                self.status_label.configure(text="✅ Archive unpacking completed successfully!")
+            else:
+                self.status_label.configure(text="✅ File copying completed successfully!")
             self.set_ui_state(False)
 
     def start_operation(self):
@@ -436,16 +608,35 @@ class SuperCopyApp(ctk.CTk):
 
         if not source or not dest:
             self.status_label.configure(
-                text="Error: Source and Destination paths are required."
+                text="❌ Error: Please select both source and destination paths."
             )
             return
 
+        # Validate source exists
+        if not os.path.exists(source):
+            self.status_label.configure(
+                text=f"❌ Error: Source path does not exist: {source}"
+            )
+            return
+
+        # Validate destination directory
+        dest_dir = os.path.dirname(dest) if os.path.isfile(dest) else dest
+        if dest_dir and not os.path.exists(dest_dir):
+            try:
+                os.makedirs(dest_dir, exist_ok=True)
+            except Exception as e:
+                self.status_label.configure(
+                    text=f"❌ Error: Cannot create destination directory: {e}"
+                )
+                return
+
+        self.start_time = time.time()
         self.set_ui_state(True)
 
         thread_args = (source, dest, self.gui_progress_callback)
         if self.is_unpack_mode:
             engine = UnpackEngine()
-            thread = threading.Thread(target=engine.run_unpack, args=thread_args)
+            thread = threading.Thread(target=self._safe_run_unpack, args=thread_args)
         else:
             engine = CopyEngine()
             # Note: GUI doesn't have a workers setting, defaults to os.cpu_count()
@@ -457,10 +648,79 @@ class SuperCopyApp(ctk.CTk):
                 self.verify_files.get(),
                 self.gui_progress_callback,
             )
-            thread = threading.Thread(target=engine.run_copy, args=full_args)
+            thread = threading.Thread(target=self._safe_run_copy, args=full_args)
 
         thread.daemon = True
         thread.start()
+
+    def _safe_run_copy(self, source, dest, workers, buffer_size, verify, callback):
+        """Wrapper for safe copy operation with error handling."""
+        try:
+            engine = CopyEngine()
+            errors = engine.run_copy(source, dest, workers, buffer_size, verify, callback)
+            if errors:
+                # Schedule error reporting in main thread
+                self.after(0, lambda: self._show_errors(errors))
+        except Exception as e:
+            self.after(0, lambda: self._show_operation_error(str(e)))
+
+    def _safe_run_unpack(self, source, dest, callback):
+        """Wrapper for safe unpack operation with error handling."""
+        try:
+            engine = UnpackEngine()
+            engine.run_unpack(source, dest, callback)
+        except Exception as e:
+            self.after(0, lambda: self._show_operation_error(str(e)))
+
+    def _show_errors(self, errors):
+        """Display errors in the UI."""
+        self.set_ui_state(False)
+        error_count = len(errors)
+        self.status_label.configure(
+            text=f"⚠️ Operation completed with {error_count} errors. Check console for details."
+        )
+        
+        # Log errors to console
+        print(f"\n⚠️ Copy Operation completed with {error_count} errors:")
+        for path, msg in errors:
+            print(f"  ❌ {path}: {msg}")
+        print("-" * 50)
+
+    def _show_operation_error(self, error_msg):
+        """Display operation error in the UI."""
+        self.set_ui_state(False)
+        self.status_label.configure(text=f"❌ Operation failed: {error_msg}")
+        print(f"\n❌ Operation failed: {error_msg}")
+
+    def browse_source(self):
+        current_path = self.source_path.get()
+        try:
+            is_file = os.path.isfile(current_path)
+        except Exception:
+            is_file = False
+
+        if is_file or any(
+            current_path.lower().endswith(ext) for ext in [".zip", ".rar", ".7z"]
+        ):
+            path = filedialog.askopenfilename(
+                title="Select a source file",
+                filetypes=[
+                    ("All Files", "*.*"),
+                    ("ZIP Archive", "*.zip"),
+                    ("7-Zip Archive", "*.7z"),
+                    ("RAR Archive", "*.rar"),
+                ]
+            )
+        else:
+            path = filedialog.askdirectory(title="Select a source folder")
+
+        if path:
+            self.source_path.set(path)
+
+    def browse_destination(self):
+        path = filedialog.askdirectory(title="Select destination folder")
+        if path:
+            self.dest_path.set(path)
 
 
 def main_gui():
