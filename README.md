@@ -22,12 +22,15 @@ It is designed to be significantly faster than the default Windows copy tool and
 
 To install SuperCopy globally via npm, you need Node.js and npm installed on your system.
 
-1.  **Install Node.js & npm:** If you don't have them, download and install Node.js from [nodejs.org](https://nodejs.org/). npm is included with Node.js.
-2.  **Install SuperCopy:** Open your terminal (Command Prompt, PowerShell, Git Bash) and run:
+1. **Install Node.js & npm:** If you don't have them, download and install Node.js from [nodejs.org](https://nodejs.org/). npm is included with Node.js.
+2. **Install SuperCopy:** Open your terminal (Command Prompt, PowerShell, Git Bash) and run:
+
     ```shell
     npm install -g @involvex/supercopy
     ```
-3.  **Usage:** After installation, you can launch the GUI by typing `supercopy` or use the CLI with arguments:
+
+3. **Usage:** After installation, you can launch the GUI by typing `supercopy` or use the CLI with arguments:
+
     ```shell
     supercopy
     supercopy --help
@@ -42,13 +45,13 @@ To install SuperCopy globally via npm, you need Node.js and npm installed on you
 
 Simply launch the SuperCopy application from your Start Menu.
 
-1.  **Select Source:** Click the "Browse" button to select a source file or directory.
-2.  **Select Destination:** Click the "Browse" button to select a destination directory.
-3.  **Choose Operation:**
+1. **Select Source:** Click the "Browse" button to select a source file or directory.
+2. **Select Destination:** Click the "Browse" button to select a destination directory.
+3. **Choose Operation:**
     - If you select a normal file or folder, the main button will say **"Copy"**.
     - If you select a `.zip`, `.7z`, or `.rar` file, the button will automatically change to **"Unpack"**.
-4.  **Set Options:** Check "Verify files" if you want to ensure data integrity after copying (this option is disabled for unpacking).
-5.  **Start:** Click the "Copy" or "Unpack" button to begin. Progress will be displayed in real-time.
+4. **Set Options:** Check "Verify files" if you want to ensure data integrity after copying (this option is disabled for unpacking).
+5. **Start:** Click the "Copy" or "Unpack" button to begin. Progress will be displayed in real-time.
 
 ### Command-Line Mode
 
@@ -86,24 +89,27 @@ supercopy <archive_path> <destination_path> --unpack
 
 If you wish to build the `SuperCopy.exe` executable yourself (e.g., to make changes or prepare a new version for npm publishing):
 
-1.  **Prerequisites:**
+1. **Prerequisites:**
     - Python 3.9+ installed and added to your system PATH.
     - Node.js and npm installed (if you plan to publish to npm).
     - Basic understanding of command-line operations.
-2.  **Clone the Repository:**
+2. **Clone the Repository:**
+
     ```shell
     git clone <your-repo-url>
     cd supercopy
     ```
-3.  **Prepare 7-Zip (for unpacking .rar files):**
+
+3. **Prepare 7-Zip (for unpacking .rar files):**
     - The SuperCopy application relies on `7z.exe` being available in your system's PATH for RAR unpacking.
     - If you do not have 7-Zip installed, download it from the [official 7-Zip website](https://www.7-zip.org/download.html) and install it. Ensure its executable directory is added to your system's PATH.
-4.  **Run the Build Script:**
+4. **Run the Build Script:**
     - Execute the `build.bat` script in the project root:
+
     ```shell
     build.bat
     ```
 
     - This script will automatically create a Python virtual environment, install all Python dependencies (`customtkinter`, `tqdm`, `pyinstaller`, `py7zr`), and run PyInstaller to create `dist\SuperCopy.exe`.
-5.  **Locate the Executable:**
+5. **Locate the Executable:**
     - The final executable, `SuperCopy.exe`, will be located in the `dist` directory.
