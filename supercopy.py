@@ -1,26 +1,30 @@
+"""
+SuperCopy: A high-performance file copy and unpack utility for Windows.
+"""
+
 import os
-import shutil
 import argparse
 import sys
 import hashlib
 import zipfile
-import py7zr
 import subprocess
 import time
+import threading
+import ctypes
+import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 
+import py7zr
+from tqdm import tqdm
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog
-import threading
-import ctypes
-import json  # Added json import
 
 # --- HELPER FUNCTIONS ---
 
 
 def get_version_from_package_json():
+    """Reads the version of the application from the package.json file."""
     # Determine the base path for package.json
     if getattr(sys, "frozen", False):
         # Running in a bundled executable (SuperCopy.exe is in dist/)
@@ -73,12 +77,18 @@ class CopyEngine:
             if verify:
                 sha256 = hashlib.sha256()
                 with open(source_path, "rb") as f:
-                    while chunk := f.read(buffer_size):
+                    while True:
+                        chunk = f.read(buffer_size)
+                        if not chunk:
+                            break
                         sha256.update(chunk)
                 original_checksum = sha256.hexdigest()
 
             with open(source_path, "rb") as fsrc, open(dest_path, "wb") as fdest:
-                while chunk := fsrc.read(buffer_size):
+                while True:
+                    chunk = fsrc.read(buffer_size)
+                    if not chunk:
+                        break
                     fdest.write(chunk)
 
             if verify and original_checksum:
@@ -97,7 +107,10 @@ class CopyEngine:
         sha256 = hashlib.sha256()
         try:
             with open(file_path, "rb") as f:
-                while chunk := f.read(4096):
+                while True:
+                    chunk = f.read(4096)
+                    if not chunk:
+                        break
                     sha256.update(chunk)
             return sha256.hexdigest() == original_checksum
         except Exception:
@@ -492,28 +505,6 @@ class SuperCopyApp(ctk.CTk):
         # Set minimum window size
         self.minsize(650, 600)
 
-    def browse_source(self):
-        current_path = self.source_path.get()
-        try:
-            is_file = os.path.isfile(current_path)
-        except Exception:
-            is_file = False
-
-        if is_file or any(
-            current_path.lower().endswith(ext) for ext in [".zip", ".rar", ".7z"]
-        ):
-            path = filedialog.askopenfilename(title="Select a source file")
-        else:
-            path = filedialog.askdirectory(title="Select a source folder")
-
-        if path:
-            self.source_path.set(path)
-
-    def browse_destination(self):
-        path = filedialog.askdirectory()
-        if path:
-            self.dest_path.set(path)
-
     def update_ui_mode(self, *args):
         source = self.source_path.get()
         is_archive = any(
@@ -754,9 +745,9 @@ def main_gui():
     app.mainloop()
 
 
-def main_cli():
-    """Function to run the tool in command-line mode."""
-    current_version = get_version_from_package_json()  # Get version here
+def get_parser():
+    """Defines and returns the ArgumentParser for CLI mode."""
+    current_version = get_version_from_package_json()
     parser = argparse.ArgumentParser(
         description="A high-performance file copy and unpack tool.",
         formatter_class=argparse.RawTextHelpFormatter,
@@ -769,8 +760,26 @@ def main_cli():
         version=f"%(prog)s {current_version}",
         help="Show program's version number and exit.",
     )
-    parser.add_argument("source", help="The source file or directory.")
-    parser.add_argument("destination", help="The destination file or directory.")
+
+    subparsers = parser.add_subparsers(dest="command", required=False)
+
+    # Completion sub-command
+    completion_parser = subparsers.add_parser(
+        "completion", help="Generate shell completion scripts."
+    )
+    completion_parser.add_argument(
+        "shell",
+        choices=["bash", "zsh", "powershell"],
+        help="The shell to generate completion for.",
+    )
+
+    # We need a way to support the legacy positional arguments without a command
+    # but argparse subparsers make this tricky.
+    # Instead, we'll keep the top-level arguments and handle "completion" manually
+    # but more robustly by using a dummy argument or checking if "completion" is the first arg.
+
+    parser.add_argument("source", nargs="?", help="The source file or directory.")
+    parser.add_argument("destination", nargs="?", help="The destination file or directory.")
     parser.add_argument(
         "--unpack",
         action="store_true",
@@ -795,8 +804,93 @@ def main_cli():
         action="store_true",
         help="Verify file integrity after copy using SHA-256 checksum.\n(Only for copy mode).",
     )
+    return parser
 
+
+def generate_completion(parser, shell):
+    """Generates shell completion scripts."""
+    options = []
+    for action in parser._actions:
+        options.extend(action.option_strings)
+
+    # Filter out positional arguments and 'completion' if it somehow ends up here
+    options = [opt for opt in options if opt.startswith("-")]
+    options = sorted(list(set(options)))
+
+    if shell == "powershell":
+        options_str = "@('" + "', '".join(options) + "')"
+        print(
+            f"""
+$scriptBlock = {{
+    param($wordToComplete, $commandAst, $cursorPosition)
+    $choices = {options_str}
+    $choices | Where-Object {{ $_ -like "$wordToComplete*" }} | ForEach-Object {{
+        [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterName', $_)
+    }}
+}}
+Register-ArgumentCompleter -Native -CommandName supercopy -ScriptBlock $scriptBlock
+Register-ArgumentCompleter -Native -CommandName SuperCopy -ScriptBlock $scriptBlock
+"""
+        )
+    elif shell == "bash":
+        options_str = " ".join(options)
+        print(
+            f"""
+_supercopy_completion() {{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${{COMP_WORDS[COMP_CWORD]}}"
+    opts="{options_str}"
+
+    COMPREPLY=( $(compgen -W "${{opts}}" -- ${{cur}}) )
+    return 0
+}}
+complete -F _supercopy_completion supercopy
+complete -F _supercopy_completion SuperCopy
+"""
+        )
+    elif shell == "zsh":
+        opts_with_help = []
+        for action in parser._actions:
+            if action.option_strings:
+                help_text = (
+                    action.help.replace("[", "\\[").replace("]", "\\]")
+                    if action.help
+                    else ""
+                )
+                for opt in action.option_strings:
+                    opts_with_help.append(f"'{opt}[{help_text}]'")
+
+        opts_str = " ".join(opts_with_help)
+        print(
+            f"""
+#compdef supercopy SuperCopy
+
+_supercopy() {{
+    _arguments \\
+        {opts_str} \\
+        '*:file:_files'
+}}
+
+compdef _supercopy supercopy SuperCopy
+"""
+        )
+
+
+def main_cli():
+    """Function to run the tool in command-line mode."""
+    parser = get_parser()
     args = parser.parse_args()
+
+    # Handle completion command
+    if args.command == "completion":
+        generate_completion(parser, args.shell)
+        sys.exit(0)
+
+    # Check for missing required positional arguments for copy/unpack
+    if not args.source or not args.destination:
+        parser.print_help()
+        sys.exit(1)
 
     # The dispatcher logic is now in __main__. This function is only called for CLI.
     # So we can assume args.source and args.destination should exist.

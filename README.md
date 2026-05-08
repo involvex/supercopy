@@ -85,6 +85,29 @@ supercopy <archive_path> <destination_path> --unpack
 
 ---
 
+### Shell Completions
+
+SuperCopy supports shell completions for PowerShell, Bash, and Zsh.
+
+#### PowerShell
+To enable completions for the current session:
+```powershell
+supercopy completion powershell | Out-String | Invoke-Expression
+```
+To make it permanent, add the above line to your `$PROFILE`.
+
+#### Bash
+Add the following to your `~/.bashrc`:
+```bash
+source <(supercopy completion bash)
+```
+
+#### Zsh
+Add the following to your `~/.zshrc`:
+```zsh
+source <(supercopy completion zsh)
+```
+
 ## Build from Source (for Developers)
 
 If you wish to build the `SuperCopy.exe` executable yourself (e.g., to make changes or prepare a new version for npm publishing):
