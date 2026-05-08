@@ -761,25 +761,15 @@ def get_parser():
         help="Show program's version number and exit.",
     )
 
-    subparsers = parser.add_subparsers(dest="command", required=False)
-
-    # Completion sub-command
-    completion_parser = subparsers.add_parser(
-        "completion", help="Generate shell completion scripts."
+    # We use a custom action for completion to avoid subparser conflicts with positional args
+    parser.add_argument(
+        "source",
+        nargs="?",
+        help="The source file or directory (or 'completion' to generate scripts).",
     )
-    completion_parser.add_argument(
-        "shell",
-        choices=["bash", "zsh", "powershell"],
-        help="The shell to generate completion for.",
+    parser.add_argument(
+        "destination", nargs="?", help="The destination file or directory."
     )
-
-    # We need a way to support the legacy positional arguments without a command
-    # but argparse subparsers make this tricky.
-    # Instead, we'll keep the top-level arguments and handle "completion" manually
-    # but more robustly by using a dummy argument or checking if "completion" is the first arg.
-
-    parser.add_argument("source", nargs="?", help="The source file or directory.")
-    parser.add_argument("destination", nargs="?", help="The destination file or directory.")
     parser.add_argument(
         "--unpack",
         action="store_true",
@@ -819,8 +809,7 @@ def generate_completion(parser, shell):
 
     if shell == "powershell":
         options_str = "@('" + "', '".join(options) + "')"
-        print(
-            f"""
+        print(f"""
 $scriptBlock = {{
     param($wordToComplete, $commandAst, $cursorPosition)
     $choices = {options_str}
@@ -830,12 +819,10 @@ $scriptBlock = {{
 }}
 Register-ArgumentCompleter -Native -CommandName supercopy -ScriptBlock $scriptBlock
 Register-ArgumentCompleter -Native -CommandName SuperCopy -ScriptBlock $scriptBlock
-"""
-        )
+""")
     elif shell == "bash":
         options_str = " ".join(options)
-        print(
-            f"""
+        print(f"""
 _supercopy_completion() {{
     local cur prev opts
     COMPREPLY=()
@@ -847,8 +834,7 @@ _supercopy_completion() {{
 }}
 complete -F _supercopy_completion supercopy
 complete -F _supercopy_completion SuperCopy
-"""
-        )
+""")
     elif shell == "zsh":
         opts_with_help = []
         for action in parser._actions:
@@ -862,8 +848,7 @@ complete -F _supercopy_completion SuperCopy
                     opts_with_help.append(f"'{opt}[{help_text}]'")
 
         opts_str = " ".join(opts_with_help)
-        print(
-            f"""
+        print(f"""
 #compdef supercopy SuperCopy
 
 _supercopy() {{
@@ -873,23 +858,29 @@ _supercopy() {{
 }}
 
 compdef _supercopy supercopy SuperCopy
-"""
-        )
+""")
 
 
 def main_cli():
     """Function to run the tool in command-line mode."""
     parser = get_parser()
-    args = parser.parse_args()
 
-    # Handle completion command
-    if args.command == "completion":
-        generate_completion(parser, args.shell)
+    # Manual check for completion command to avoid subparser conflicts
+    if len(sys.argv) > 1 and sys.argv[1] == "completion":
+        shell = sys.argv[2] if len(sys.argv) > 2 else "powershell"
+        if shell not in ["bash", "zsh", "powershell"]:
+            print(f"Error: Invalid shell '{shell}'. Choices are bash, zsh, powershell.")
+            sys.exit(1)
+        generate_completion(parser, shell)
         sys.exit(0)
+
+    args = parser.parse_args()
 
     # Check for missing required positional arguments for copy/unpack
     if not args.source or not args.destination:
         parser.print_help()
+        print("\nCommands:")
+        print("  completion [bash|zsh|powershell]  Generate shell completion scripts.")
         sys.exit(1)
 
     # The dispatcher logic is now in __main__. This function is only called for CLI.
