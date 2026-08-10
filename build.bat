@@ -14,6 +14,16 @@ set REQUIREMENTS_FILE=requirements.txt
 set MAIN_SCRIPT=supercopy.py
 set OUTPUT_NAME=SuperCopy
 
+:: Extract version from package.json
+for /f "tokens=2 delims=:" %%a in ('findstr /R "\"version\":" package.json') do (
+    set VERSION=%%a
+)
+set VERSION=%VERSION:"=%
+set VERSION=%VERSION:,=%
+set VERSION=%VERSION: =%
+
+echo Version: %VERSION%
+
 :: 1. Check for and create the virtual environment
 if not exist "%VENV_DIR%" (
     echo Creating Python virtual environment in %VENV_DIR%...
@@ -55,6 +65,22 @@ echo ====================================
 echo.
 echo The executable can be found at:
 echo   .\dist\%OUTPUT_NAME%.exe
+echo.
+
+:: 4. Create Windows Installer (if NSIS is available)
+where makensis >nul 2>nul
+if %errorlevel% equ 0 (
+    echo Creating Windows installer with NSIS...
+    makensis /DVERSION=%VERSION% installer.nsi
+    if errorlevel 1 (
+        echo WARNING: NSIS installer creation failed.
+    ) else (
+        echo Installer created: SuperCopy-Installer.exe
+    )
+) else (
+    echo NSIS not found in PATH. Skipping installer creation.
+    echo Install NSIS from https://nsis.sourceforge.io/ to create installer.
+)
 echo.
 goto :success
 

@@ -18,12 +18,13 @@
     "node": ">=14.0.0"
   },
   "bin": {
-    "supercopy": "bin/supercopy.js"
+    "supercopy": "bin/supercopy.js",
+    "scpy": "bin/supercopy.js"
   },
   "scripts": {
     "start": "node bin/supercopy.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "build.bat",
+    "build": "cmd /c build.bat",
     "release": "npm version patch && npm run build && makensis installer.nsi && npm publish --access public"
   },
   "os": [

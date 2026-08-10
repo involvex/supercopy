@@ -9,7 +9,9 @@
 
 !define APP_NAME "SuperCopy"
 !define COMPANY_NAME "SuperCopy Project"
-!define VERSION "1.0.0"
+!ifndef VERSION
+  !define VERSION "0.0.0"
+!endif
 !define EXE_NAME "SuperCopy.exe"
 !define INSTALLER_NAME "SuperCopy-Installer.exe"
 
