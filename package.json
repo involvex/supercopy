@@ -30,7 +30,7 @@
     "release": "npm version patch && npm run build && node -e \"const v=require('./package.json').version; require('child_process').execSync('makensis /DVERSION='+v+' installer.nsi',{stdio:'inherit'})\" && npm publish --access public",
     "format": "bun fmt",
     "lint": "bun lint",
-    "prebuild": "bun run lint && bun run format && bun check"
+    "prebuild": "bun lint && bun run format && bun check"
   },
   "os": [
     "win32"
