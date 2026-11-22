@@ -8,22 +8,21 @@ This file provides comprehensive instructions for AI agents working on the Super
 
 **SuperCopy** is a high-performance file utility for Windows that provides:
 
-- A modern GUI for file copying and archive unpacking
-- A command-line interface (CLI) for automation
-- Multi-threaded file copying with optimized buffers
-- Support for unpacking `.zip`, `.7z`, and `.rar` archives
-- Real-time progress tracking with dual progress bars
-- Optional SHA-256 checksum verification for data integrity
+- A CLI-first copy/unpack tool (primary use case), with an optional GUI
+- Multi-threaded file copying with filters, dry-run, conflict policy, retries
+- Archive unpack/list for `.zip`, `.7z`, `.rar`, and tar variants
+- Dual progress bars and optional SHA-256 verification
+- Bun/npm shim launching `dist/SuperCopy.exe`
 
 ### Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| GUI Framework | Python (`customtkinter`, `tkinter`) |
-| CLI Wrapper | Node.js |
+| GUI Framework | Python (`customtkinter`, `tkinter`) — lazy-imported |
+| CLI Wrapper | Bun/Node (`bin/supercopy.js`) |
 | Build Tool | PyInstaller |
-| Archive Support | `py7zr` (7z), `zipfile` (zip), 7-Zip (RAR) |
-| Package Manager | npm (Node.js), pip (Python) |
+| Archive Support | `py7zr`, `zipfile`, `tarfile`, 7-Zip (RAR) |
+| Package Manager | npm / Bun, pip (Python) |
 
 ---
 
@@ -32,36 +31,34 @@ This file provides comprehensive instructions for AI agents working on the Super
 ### Development Commands
 
 ```bash
-# Run the application in development mode
-python supercopy.py
+# CLI in development
+python supercopy.py C:\src D:\dst --quiet
 
-# Run via npm
-npm start
+# Via Bun/npm shim (needs dist/SuperCopy.exe)
+bun run build
+bun link
+supercopy C:\src D:\dst --verify
 
-# Run CLI with arguments
-supercopy <source> <destination> --verify
-supercopy <archive_path> <destination_path> --unpack
+# Tests
+python -m pytest tests -q
 ```
 
 ### Build Commands
 
 ```bash
-# Build the executable (Windows)
-build.bat
+# Full build (GUI + CLI), no pause — good for Bun/npm
+bun run build
+# or: build.bat --nopause
 
-# Or manually with PyInstaller
-python -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
-.venv\Scripts\pyinstaller --name SuperCopy --onefile supercopy.py
+# Slim CLI-only exe (excludes customtkinter)
+bun run build:cli
 ```
 
-### npm Commands
+### npm / Bun Commands
 
 ```bash
-# Publish to npm (after building)
+bun add -g @involvex/supercopy
 npm publish --access public
-
-# Version bump and release
 npm run release
 ```
 
@@ -71,18 +68,16 @@ npm run release
 
 ```
 supercopy/
-├── supercopy.py          # Main Python application (GUI + CLI logic)
-├── bin/
-│   └── supercopy.js      # Node.js CLI entry point wrapper
-├── package.json          # npm package configuration
-├── requirements.txt      # Python dependencies
-├── build.bat            # Build script for Windows
-├── installer.nsi        # NSIS installer configuration
-├── SuperCopy.spec       # PyInstaller specification
-├── README.md            # User documentation
-├── dist/
-│   └── SuperCopy.exe    # Built executable (generated)
-└── .gitignore           # Git ignore patterns
+├── supercopy.py          # CLI + engines (+ lazy GUI)
+├── bin/supercopy.js      # Bun/Node shim → dist/SuperCopy.exe
+├── tests/test_cli.py     # CLI unit tests
+├── package.json
+├── requirements.txt
+├── build.bat             # --nopause / --cli supported
+├── .npmignore            # ensures dist/SuperCopy.exe is published
+├── installer.nsi
+├── README.md
+└── dist/SuperCopy.exe    # built artifact
 ```
 
 ---
@@ -151,22 +146,29 @@ The application supports two modes:
 
 | Option | Description |
 |--------|-------------|
-| `-w, --workers` | Number of concurrent threads (default: based on CPU cores) |
-| `-b, --buffer` | I/O buffer size in bytes |
-| `--verify` | Perform SHA-256 checksum verification after copying |
-| `--unpack` | Switch to archive unpacking mode |
+| `-w, --workers` | Concurrent copy threads |
+| `-b, --buffer` | I/O buffer bytes (must be >= 1) |
+| `--verify` | SHA-256 verify after each copy |
+| `--unpack` / `--list` | Unpack or list archives |
+| `--on-conflict` | `overwrite` / `skip` / `update` |
+| `--dry-run` / `-q` / `--json` | Scripting helpers |
+| `--exclude` / `--include` | Glob filters |
+| `--retries` / `--retry-wait` | Transient I/O retries |
+| `--mirror` / `--move` | Sync delete / move |
+| `--password` | Encrypted archives |
+
+Exit codes: `0` ok, `1` failure/errors, `2` bad args.
 
 ### Archive Support
 
-- **ZIP**: Native Python `zipfile` module
-- **7z**: Python `py7zr` library
-- **RAR**: Requires external `7z.exe` in system PATH
+- **ZIP / tar / tar.gz / tar.bz2 / tar.xz**: stdlib
+- **7z**: `py7zr`
+- **RAR**: external `7z.exe` on PATH
 
 ### Data Integrity
 
-- Use `--verify` flag to enable SHA-256 checksum verification
-- Verification happens after file copy and before completion
-- Raises exception on checksum mismatch
+- `--verify` hashes source, copies, then verifies destination
+- Checksum mismatch is recorded as a per-file error (non-zero exit)
 
 ---
 
@@ -181,13 +183,12 @@ The application supports two modes:
 
 - **Target OS**: Windows only (`win32`)
 - **Architectures**: `x64`, `ia32`
-- **Node.js**: Requires Node.js >= 14.0.0
+- **Node.js / Bun**: Node >= 14 or Bun >= 1
 
 ### Distribution
 
-- The application is distributed as an npm package: `@involvex/supercopy`
-- The npm package wraps the PyInstaller-built executable
-- Published with `preferGlobal: true` for system-wide CLI access
+- npm/Bun package `@involvex/supercopy` wraps `dist/SuperCopy.exe`
+- `.npmignore` intentionally ships the exe (do not rely on `.gitignore` alone)
 
 ---
 
@@ -221,9 +222,11 @@ class CopyEngine:
 2. **Import errors**: Ensure virtual environment is activated and dependencies installed
 3. **Build failures**: Check Python version (3.9+ required) and PyInstaller compatibility
 
-### Debug Mode
+### Common CLI issues
 
-The application includes debug logging. Check `console_debug.log` for runtime errors.
+1. Missing `dist/SuperCopy.exe`: run `bun run build`
+2. `--buffer 0` rejected with exit `2`
+3. Copy with per-file errors exits `1`
 
 ---
 
@@ -231,8 +234,7 @@ The application includes debug logging. Check `console_debug.log` for runtime er
 
 When making changes:
 
-1. Test both GUI and CLI modes
-2. Verify archive unpacking works for all supported formats
-3. Test with `--verify` flag for data integrity checks
-4. Build and test the executable before submitting
-5. Update version in `package.json` for releases
+1. Run `python -m pytest tests -q`
+2. Test CLI copy, unpack, and `--json` / exit codes
+3. Build with `bun run build` before publishing
+4. Update `package.json` version and `CHANGELOG.md`

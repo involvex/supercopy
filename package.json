@@ -1,7 +1,7 @@
 {
   "name": "@involvex/supercopy",
   "version": "0.0.10",
-  "description": "A high-performance file copy and unpack utility for Windows with advanced features including progress tracking, multi-threading, and intelligent conflict resolution.",
+  "description": "A high-performance Windows file copy and unpack CLI with multi-threading, filters, dry-run, verify, and archive support.",
   "author": {
     "name": "Involvex"
   },
@@ -15,7 +15,8 @@
     "url": "https://github.com/involvex/supercopy/issues"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=14.0.0",
+    "bun": ">=1.0.0"
   },
   "bin": {
     "supercopy": "bin/supercopy.js",
@@ -23,9 +24,10 @@
   },
   "scripts": {
     "start": "node bin/supercopy.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cmd /c build.bat",
-    "release": "npm version patch && npm run build && makensis installer.nsi && npm publish --access public"
+    "test": "python -m pytest tests -q",
+    "build": "cmd /c build.bat --nopause",
+    "build:cli": "cmd /c build.bat --cli --nopause",
+    "release": "npm version patch && npm run build && node -e \"const v=require('./package.json').version; require('child_process').execSync('makensis /DVERSION='+v+' installer.nsi',{stdio:'inherit'})\" && npm publish --access public"
   },
   "os": [
     "win32"
@@ -42,13 +44,15 @@
     "cli",
     "file-copy",
     "batch-processing",
-    "file-management"
+    "file-management",
+    "bun"
   ],
   "files": [
     "bin",
-    "dist",
+    "dist/SuperCopy.exe",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "preferGlobal": true,
   "funding": {

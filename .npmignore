@@ -1,0 +1,12 @@
+# Ship only what the Bun/npm CLI shim needs. Do not inherit .gitignore
+# (which excludes dist/), or published installs miss SuperCopy.exe.
+
+*
+!bin/
+!bin/**
+!dist/
+!dist/SuperCopy.exe
+!README.md
+!LICENSE
+!package.json
+!CHANGELOG.md

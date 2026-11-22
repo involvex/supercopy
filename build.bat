@@ -1,18 +1,41 @@
 @echo off
-setlocal
+setlocal EnableExtensions
 
 echo ====================================
 echo        SuperCopy Build Script
 echo ====================================
 echo.
 
-:: Define the virtual environment directory
 set VENV_DIR=.venv
 set PYTHON_EXE=%VENV_DIR%\Scripts\python.exe
 set PYINSTALLER_EXE=%VENV_DIR%\Scripts\pyinstaller.exe
 set REQUIREMENTS_FILE=requirements.txt
 set MAIN_SCRIPT=supercopy.py
 set OUTPUT_NAME=SuperCopy
+set BUILD_CLI=0
+set NOPAUSE=0
+
+:parse_args
+if "%~1"=="" goto args_done
+if /I "%~1"=="--cli" (
+    set BUILD_CLI=1
+    shift
+    goto parse_args
+)
+if /I "%~1"=="--nopause" (
+    set NOPAUSE=1
+    shift
+    goto parse_args
+)
+echo Unknown argument: %~1
+echo Usage: build.bat [--cli] [--nopause]
+exit /b 2
+
+:args_done
+
+if defined npm_lifecycle_event set NOPAUSE=1
+if defined CI set NOPAUSE=1
+if defined BUN set NOPAUSE=1
 
 :: Extract version from package.json
 for /f "tokens=2 delims=:" %%a in ('findstr /R "\"version\":" package.json') do (
@@ -23,8 +46,13 @@ set VERSION=%VERSION:,=%
 set VERSION=%VERSION: =%
 
 echo Version: %VERSION%
+if "%BUILD_CLI%"=="1" (
+    echo Mode: CLI-only slim build
+) else (
+    echo Mode: Full build ^(GUI + CLI^)
+)
+echo.
 
-:: 1. Check for and create the virtual environment
 if not exist "%VENV_DIR%" (
     echo Creating Python virtual environment in %VENV_DIR%...
     python -m venv %VENV_DIR%
@@ -38,7 +66,6 @@ if not exist "%VENV_DIR%" (
 )
 echo.
 
-:: 2. Install dependencies from requirements.txt
 echo Installing required packages from %REQUIREMENTS_FILE%...
 %PYTHON_EXE% -m pip install -r %REQUIREMENTS_FILE%
 if errorlevel 1 (
@@ -48,10 +75,19 @@ if errorlevel 1 (
 echo Packages installed successfully.
 echo.
 
-:: 3. Run PyInstaller to build the executable
 echo Building executable with PyInstaller...
 echo This may take a few minutes.
-%PYINSTALLER_EXE% --name "%OUTPUT_NAME%" --onefile --icon=NONE "%MAIN_SCRIPT%"
+
+if "%BUILD_CLI%"=="1" (
+    %PYINSTALLER_EXE% --name "%OUTPUT_NAME%" --onefile --console ^
+        --exclude-module customtkinter --exclude-module tkinter --exclude-module _tkinter ^
+        --hidden-import=py7zr --hidden-import=tqdm ^
+        "%MAIN_SCRIPT%"
+) else (
+    %PYINSTALLER_EXE% --name "%OUTPUT_NAME%" --onefile --console ^
+        --hidden-import=customtkinter --hidden-import=py7zr --hidden-import=tqdm ^
+        "%MAIN_SCRIPT%"
+)
 
 if errorlevel 1 (
     echo ERROR: PyInstaller failed to build the executable.
@@ -67,15 +103,18 @@ echo The executable can be found at:
 echo   .\dist\%OUTPUT_NAME%.exe
 echo.
 
-:: 4. Create Windows Installer (if NSIS is available)
 where makensis >nul 2>nul
 if %errorlevel% equ 0 (
-    echo Creating Windows installer with NSIS...
-    makensis /DVERSION=%VERSION% installer.nsi
-    if errorlevel 1 (
-        echo WARNING: NSIS installer creation failed.
+    if "%BUILD_CLI%"=="1" (
+        echo Skipping NSIS installer for CLI-only build.
     ) else (
-        echo Installer created: SuperCopy-Installer.exe
+        echo Creating Windows installer with NSIS...
+        makensis /DVERSION=%VERSION% installer.nsi
+        if errorlevel 1 (
+            echo WARNING: NSIS installer creation failed.
+        ) else (
+            echo Installer created: SuperCopy-Installer.exe
+        )
     )
 ) else (
     echo NSIS not found in PATH. Skipping installer creation.
@@ -89,9 +128,9 @@ echo.
 echo ====================================
 echo      BUILD FAILED
 echo ====================================
-pause
+if "%NOPAUSE%"=="0" pause
 exit /b 1
 
 :success
-pause
+if "%NOPAUSE%"=="0" pause
 exit /b 0
