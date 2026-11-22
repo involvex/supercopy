@@ -3,6 +3,7 @@
 Status: **done** (with follow-up polish from the CLI improvement pass).
 
 ## What shipped
+
 - `supercopy completion [bash|zsh|powershell]` (default: powershell)
 - Completes flags for `supercopy`, `SuperCopy`, and `scpy`
 - PowerShell: flag matches first; otherwise path completion fallback
@@ -11,6 +12,7 @@ Status: **done** (with follow-up polish from the CLI improvement pass).
 - Documented in `--help` epilog and README
 
 ## Verify
+
 ```shell
 python supercopy.py completion powershell
 python supercopy.py completion bash

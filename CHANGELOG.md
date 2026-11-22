@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - CLI: `--on-conflict overwrite|skip|update`
 - CLI: `--dry-run`, `--exclude` / `--include`, `-q/--quiet`, `--json`
 - CLI: `--retries` / `--retry-wait`, `--mirror`, `--move`
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - pytest suite under `tests/`
 
 ### Changed
+
 - Copy failures now exit non-zero; invalid `--buffer` exits `2`
 - GUI imports are lazy (CLI no longer loads CustomTkinter at import time)
 - Console output uses encoding-safe printing (no emoji crash on cp1252)
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README focused on CLI + Bun usage; package description updated
 
 ### Fixed
+
 - Bun/Node shim `close` with null exit code no longer reports success
 - Partial copy error lists go to stderr; scripts can detect failure
 - RAR unpack preserves 7-Zip exit code in error messages
@@ -36,12 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.10]
 
 ### Added
+
 - Shell completion support for PowerShell, Bash, and Zsh
 - `--version` / `-v` flag to display version
 
 ## [0.0.9] - 2026-08-10
 
 ### Added
+
 - GUI mode with modern dark theme using CustomTkinter
 - Dual progress bars (file count + total size)
 - Archive unpacking support for .zip, .7z, .rar
@@ -52,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - npm package distribution
 
 ### Changed
+
 - Refactored code into CopyEngine and UnpackEngine classes
 - Improved error handling and reporting
 - Better progress callbacks for both GUI and CLI
@@ -59,17 +65,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.8] - 2026-07-15
 
 ### Added
+
 - Basic CLI file copying
 - Multi-threading support
 - Buffer size configuration
 
 ### Fixed
+
 - Large file handling
 - Directory copy logic
 
 ## [0.0.7] - 2026-06-01
 
 ### Added
+
 - Initial CLI implementation
 - Basic file copy functionality
 - Progress bar with tqdm

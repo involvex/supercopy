@@ -111,28 +111,28 @@ source <(supercopy completion zsh)
 
 ## CLI options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--unpack` | Extract archive to destination | off |
-| `--list` | List archive contents (no extract) | off |
-| `-w, --workers` | Concurrent copy threads | CPU count |
-| `-b, --buffer` | I/O buffer bytes (must be >= 1) | 1048576 |
-| `--verify` | SHA-256 verify after each copy | off |
-| `--on-conflict` | `overwrite` / `skip` / `update` | overwrite |
-| `--dry-run` | Do not write; show what would happen | off |
-| `--exclude GLOB` | Exclude matching paths (repeatable) | |
-| `--include GLOB` | Only include matching paths (repeatable) | |
-| `-q, --quiet` | Suppress progress output | off |
-| `--json` | Print JSON summary | off |
-| `--retries N` | Retry transient I/O errors | 0 |
-| `--retry-wait SEC` | Wait between retries | 1.0 |
-| `--mirror` | Delete dest files not in source | off |
-| `--move` | Move (copy then remove source) | off |
-| `--no-empty-dirs` | Skip recreating empty directories | off |
-| `--no-preserve-metadata` | Do not copy mtime/attributes | off |
-| `--password` | Archive password (unpack/list) | |
-| `-v, --version` | Show version | |
-| `completion [shell]` | Emit completion script | powershell |
+| Option                   | Description                              | Default    |
+| ------------------------ | ---------------------------------------- | ---------- |
+| `--unpack`               | Extract archive to destination           | off        |
+| `--list`                 | List archive contents (no extract)       | off        |
+| `-w, --workers`          | Concurrent copy threads                  | CPU count  |
+| `-b, --buffer`           | I/O buffer bytes (must be >= 1)          | 1048576    |
+| `--verify`               | SHA-256 verify after each copy           | off        |
+| `--on-conflict`          | `overwrite` / `skip` / `update`          | overwrite  |
+| `--dry-run`              | Do not write; show what would happen     | off        |
+| `--exclude GLOB`         | Exclude matching paths (repeatable)      |            |
+| `--include GLOB`         | Only include matching paths (repeatable) |            |
+| `-q, --quiet`            | Suppress progress output                 | off        |
+| `--json`                 | Print JSON summary                       | off        |
+| `--retries N`            | Retry transient I/O errors               | 0          |
+| `--retry-wait SEC`       | Wait between retries                     | 1.0        |
+| `--mirror`               | Delete dest files not in source          | off        |
+| `--move`                 | Move (copy then remove source)           | off        |
+| `--no-empty-dirs`        | Skip recreating empty directories        | off        |
+| `--no-preserve-metadata` | Do not copy mtime/attributes             | off        |
+| `--password`             | Archive password (unpack/list)           |            |
+| `-v, --version`          | Show version                             |            |
+| `completion [shell]`     | Emit completion script                   | powershell |
 
 Exit codes: `0` success, `1` errors / failure, `2` invalid arguments (e.g. `--buffer 0`).
 
@@ -183,12 +183,12 @@ supercopy/
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
+| Issue                            | Solution                                                                |
+| -------------------------------- | ----------------------------------------------------------------------- |
 | `SuperCopy executable not found` | Run `bun run build` (or `npm run build`) so `dist/SuperCopy.exe` exists |
-| `7z.exe not found` | Install 7-Zip and add it to PATH |
-| `Buffer size must be >= 1` | Pass a positive `-b` value |
-| Permission denied | Check ACLs or run elevated if needed |
+| `7z.exe not found`               | Install 7-Zip and add it to PATH                                        |
+| `Buffer size must be >= 1`       | Pass a positive `-b` value                                              |
+| Permission denied                | Check ACLs or run elevated if needed                                    |
 
 ---
 

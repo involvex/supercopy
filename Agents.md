@@ -16,13 +16,13 @@ This file provides comprehensive instructions for AI agents working on the Super
 
 ### Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| GUI Framework | Python (`customtkinter`, `tkinter`) — lazy-imported |
-| CLI Wrapper | Bun/Node (`bin/supercopy.js`) |
-| Build Tool | PyInstaller |
-| Archive Support | `py7zr`, `zipfile`, `tarfile`, 7-Zip (RAR) |
-| Package Manager | npm / Bun, pip (Python) |
+| Component       | Technology                                          |
+| --------------- | --------------------------------------------------- |
+| GUI Framework   | Python (`customtkinter`, `tkinter`) — lazy-imported |
+| CLI Wrapper     | Bun/Node (`bin/supercopy.js`)                       |
+| Build Tool      | PyInstaller                                         |
+| Archive Support | `py7zr`, `zipfile`, `tarfile`, 7-Zip (RAR)          |
+| Package Manager | npm / Bun, pip (Python)                             |
 
 ---
 
@@ -144,18 +144,18 @@ The application supports two modes:
 
 ### CLI Options
 
-| Option | Description |
-|--------|-------------|
-| `-w, --workers` | Concurrent copy threads |
-| `-b, --buffer` | I/O buffer bytes (must be >= 1) |
-| `--verify` | SHA-256 verify after each copy |
-| `--unpack` / `--list` | Unpack or list archives |
-| `--on-conflict` | `overwrite` / `skip` / `update` |
-| `--dry-run` / `-q` / `--json` | Scripting helpers |
-| `--exclude` / `--include` | Glob filters |
-| `--retries` / `--retry-wait` | Transient I/O retries |
-| `--mirror` / `--move` | Sync delete / move |
-| `--password` | Encrypted archives |
+| Option                        | Description                     |
+| ----------------------------- | ------------------------------- |
+| `-w, --workers`               | Concurrent copy threads         |
+| `-b, --buffer`                | I/O buffer bytes (must be >= 1) |
+| `--verify`                    | SHA-256 verify after each copy  |
+| `--unpack` / `--list`         | Unpack or list archives         |
+| `--on-conflict`               | `overwrite` / `skip` / `update` |
+| `--dry-run` / `-q` / `--json` | Scripting helpers               |
+| `--exclude` / `--include`     | Glob filters                    |
+| `--retries` / `--retry-wait`  | Transient I/O retries           |
+| `--mirror` / `--move`         | Sync delete / move              |
+| `--password`                  | Encrypted archives              |
 
 Exit codes: `0` ok, `1` failure/errors, `2` bad args.
 

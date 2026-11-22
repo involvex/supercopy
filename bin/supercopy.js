@@ -18,7 +18,7 @@ if (!fs.existsSync(exePath)) {
       "",
       "From a source checkout this creates dist/SuperCopy.exe.",
       "If you installed via npm/bun, the published package should include dist/SuperCopy.exe.",
-    ].join("\n")
+    ].join("\n"),
   );
   process.exit(1);
 }
