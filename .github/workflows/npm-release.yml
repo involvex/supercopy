@@ -11,7 +11,7 @@ on:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -19,7 +19,7 @@ jobs:
           bun-version: "latest"
       - uses: actions/setup-python@v7.1.0
         with:
-          python-version: "3.7.9"
+          python-version: "3.12"
       - run: bun install
       - run: bun run build
       - uses: JS-DevTools/npm-publish@v4
@@ -31,7 +31,7 @@ jobs:
         with:
           name: ${{ github.ref_name }}
           files: |
-            - dist/**
-            - README.md
-            - LICENSE
-            - bin/**
+            dist/**
+            README.md
+            LICENSE
+            bin/**
